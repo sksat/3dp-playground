@@ -79,6 +79,45 @@ translate([x, -0.1, z])
 - 各変換の効果を論理的に追跡する（試行錯誤ではなく）
 - OpenSCADの回転方向: `rotate([90,0,0])` で Y→+Z、`rotate([-90,0,0])` で Y→-Z
 
+**より良いアプローチ: 独立パネルとして設計**
+
+壁にカットアウトを配置するのではなく、パネルを独立したモジュールとして設計する:
+
+```openscad
+// パネルを水平状態で設計（板 + コネクタ穴 + ラベル）
+module front_panel() {
+    // 板本体
+    color("white") difference() {
+        cube([width, height, thickness]);
+        // コネクタカットアウト
+        for (i = [0:2]) translate([x, 0, 0]) de9_cutout();
+        // ラベル凹み
+        for (i = [0:2]) translate([x, y, z]) label_cutout();
+    }
+    // ラベル本体
+    color("black") for (i = [0:2]) translate([x, y, z]) label_text();
+}
+
+// 箱本体からパネルの場所をくり抜き
+module box_body() {
+    difference() {
+        cube([...]);
+        // 前面壁をくり抜き（境界面を少しオーバーラップ）
+        translate([0, -0.1, wall_thickness])
+            cube([box_width, wall_thickness + 0.2, box_height]);
+    }
+}
+
+// 組み立て: パネルを回転して配置
+translate([x, y, z]) rotate([90, 0, 0]) front_panel();
+```
+
+**利点:**
+- パネル内で板・穴・ラベルを一括管理
+- モジュール内で `color()` を使えば呼び出し側はシンプル
+- 配置時は単純な translate + rotate のみ
+- くり抜き時は境界面をオーバーラップさせて Z-fighting を防止
+
 ### Multi-Color Printing
 
 OpenSCAD 2024以降 + lazy-union で、`color()` で指定した色ごとに別オブジェクトとして3MF出力可能:

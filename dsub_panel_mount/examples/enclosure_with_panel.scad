@@ -27,9 +27,13 @@ front_row_width = db9_w * 3 + front_h_spacing * 2;
 label_font_size = 5;
 label_depth = 1.0;
 label_font = "Liberation Sans:style=Bold";
-front_label_z = front_conn_z + bracket_h/2 + 4;  // コネクタの上
+label_offset_y = bracket_h/2 + 4;  // コネクタ中心からラベルまでの距離
 
-// ===== 前面ラベル用モジュール =====
+// ===== 前面パネル（独立した板として設計） =====
+// 水平状態で設計し、回転して配置
+// コネクタ中心を原点として設計
+
+// ラベル用テキスト
 module front_label_text(txt) {
     linear_extrude(height = label_depth)
         text(txt, size = label_font_size, font = label_font, halign = "center", valign = "center");
@@ -41,7 +45,40 @@ module front_label_cutout_text(txt) {
             text(txt, size = label_font_size, font = label_font, halign = "center", valign = "center");
 }
 
-// ===== 箱本体 =====
+// 前面パネル（板 + コネクタ穴 + ラベル、色分け済み）
+module front_panel() {
+    front_panel_height = box_height - wall_thickness;  // 底面を除く高さ
+
+    // 板本体
+    color("white") difference() {
+        // 板（コネクタ中心が原点）
+        translate([-box_width/2, -front_conn_z + wall_thickness, 0])
+            cube([box_width, front_panel_height, wall_thickness]);
+
+        // コネクタカットアウト
+        for (i = [0:2]) {
+            x = -front_row_width/2 + db9_w/2 + i * (db9_w + front_h_spacing);
+            translate([x, 0, 0])
+                de9_cutout();
+        }
+
+        // ラベル凹み
+        for (i = [0:2]) {
+            x = -front_row_width/2 + db9_w/2 + i * (db9_w + front_h_spacing);
+            translate([x, label_offset_y, wall_thickness - label_depth])
+                front_label_cutout_text("DE-9");
+        }
+    }
+
+    // ラベル本体
+    color("black") for (i = [0:2]) {
+        x = -front_row_width/2 + db9_w/2 + i * (db9_w + front_h_spacing);
+        translate([x, label_offset_y, wall_thickness - label_depth])
+            front_label_text("DE-9");
+    }
+}
+
+// ===== 箱本体（前面壁なし） =====
 module box_body() {
     difference() {
         // 外側
@@ -55,36 +92,10 @@ module box_body() {
                 box_height  // 上は開放
             ]);
 
-        // 前面 DE-9 x3 (広い側が上、ナットは内側)
-        // 変換順序: Z軸反転でナット位置入替 → Z軸回転でD形状反転 → X軸回転で壁向き
-        for (i = [0:2]) {
-            x = box_width/2 - front_row_width/2 + db9_w/2 + i * (db9_w + front_h_spacing);
-            translate([x, -0.1, front_conn_z])
-                rotate([-90, 0, 0])
-                    translate([0, 0, plate_thickness/2])
-                        rotate([0, 180, 0])
-                            translate([0, 0, -plate_thickness/2])
-                                rotate([0, 0, 180])
-                                    de9_cutout();
-        }
-
-        // 前面ラベル凹み
-        for (i = [0:2]) {
-            x = box_width/2 - front_row_width/2 + db9_w/2 + i * (db9_w + front_h_spacing);
-            translate([x, label_depth, front_label_z])
-                rotate([90, 0, 0])
-                    front_label_cutout_text("DE-9");
-        }
-    }
-}
-
-// 前面ラベル本体
-module front_labels() {
-    for (i = [0:2]) {
-        x = box_width/2 - front_row_width/2 + db9_w/2 + i * (db9_w + front_h_spacing);
-        translate([x, label_depth, front_label_z])
-            rotate([90, 0, 0])
-                front_label_text("DE-9");
+        // 前面壁をくり抜き（前面パネルが入る場所）
+        // Y方向を少し拡大して確実に面を除去
+        translate([0, -0.1, wall_thickness])
+            cube([box_width, wall_thickness + 0.2, box_height]);
     }
 }
 
@@ -92,8 +103,10 @@ module front_labels() {
 // 箱本体
 color("white") box_body();
 
-// 前面ラベル
-color("black") front_labels();
+// 前面パネル（回転して配置）
+translate([box_width/2, wall_thickness, front_conn_z])
+    rotate([90, 0, 0])
+        front_panel();
 
 // 天板（multi_connector_panel）
 translate([box_width/2, box_depth/2, box_height]) {
