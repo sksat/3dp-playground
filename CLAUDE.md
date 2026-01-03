@@ -118,6 +118,74 @@ translate([x, y, z]) rotate([90, 0, 0]) front_panel();
 - 配置時は単純な translate + rotate のみ
 - くり抜き時は境界面をオーバーラップさせて Z-fighting を防止
 
+### Assembly-Time Features (組み立て時の形状追加)
+
+複数パーツを組み合わせた後に追加形状（ボスなど）や差分（穴など）を適用する場合、操作の順番が重要。
+
+**問題のパターン:**
+```openscad
+// 間違い: 各パーツ内でボスや穴を作成
+module box_body() {
+    difference() {
+        union() {
+            basic_box();
+            bosses();  // ここでボスを作成
+        }
+        insert_holes();  // ここで穴を開ける
+    }
+}
+
+// 組み立て
+box_body();
+front_panel();  // ← ボスや穴の後に追加されるため干渉する
+```
+
+**正しいアプローチ: 組み立てセクションで統合**
+```openscad
+// 各モジュールはシンプルに
+module box_body() {
+    difference() {
+        cube([...]);
+        // 内側くり抜きのみ
+    }
+}
+
+module front_panel() {
+    // 板 + コネクタ穴のみ
+}
+
+// 組み立てセクションで全体を統合してから追加形状を適用
+color("white") difference() {
+    union() {
+        box_body();
+        front_panel();  // パネルも含める
+        // ボスを追加（全パーツが揃った後）
+        for (pos = boss_positions)
+            cylinder(...);
+    }
+    // 穴を開ける（全体に対して）
+    for (pos = boss_positions)
+        cylinder(...);
+}
+```
+
+**ポイント:**
+- モジュールはシンプルな形状のみ担当
+- union/difference の順番を制御するには、組み立てセクションで統合
+- 色分けが必要な場合、統合する部分と個別の部分を分ける
+
+### Heat-Set Inserts (ヒートセットインサート)
+
+M3ヒートセットインサート用の設計パラメータ:
+```openscad
+insert_hole_d = 4.2;      // 穴径（インサート外径4-5mmより少し小さめ）
+insert_hole_depth = 6;    // 穴深さ（インサート長さ5mm + 余裕1mm）
+boss_d = 8;               // ボス直径（穴 + 肉厚）
+```
+
+- 穴は上面から開ける（印刷後にインサートを熱圧入）
+- ボス（柱）で薄い壁にも対応可能
+
 ### Multi-Color Printing
 
 OpenSCAD 2024以降 + lazy-union で、`color()` で指定した色ごとに別オブジェクトとして3MF出力可能:
