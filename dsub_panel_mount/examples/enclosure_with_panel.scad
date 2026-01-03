@@ -18,6 +18,8 @@
 
 use <../dsub_panel_mount.scad>
 use <mock_pcb.scad>
+use <../../heat_insert/heat_insert.scad>
+use <../../screw_post/screw_post.scad>
 include <BOSL2/std.scad>
 include <NopSCADlib/core.scad>
 include <NopSCADlib/vitamins/d_connectors.scad>
@@ -53,20 +55,18 @@ corner_r = 3;          // 角のフィレット半径
 plate_thickness = 8;
 
 // インサートナット用パラメータ（M3ヒートセットインサート）
-// 一般的なM3インサート: 外径4-5mm、長さ5mm
-insert_hole_d = 4.2;   // 穴径（インサート外径より少し小さめ）
-insert_hole_depth = 6; // 穴深さ（インサート長さ5mm + 余裕1mm）
-boss_d = 8;            // ボス（柱）の直径（インサート穴 + 肉厚）
+// heat_insert ライブラリの推奨値を使用
+boss_d = insert_boss_d("M3", wall = 2);
 boss_inset = boss_d / 2;  // ボス中心の端からの距離
 
 // PCBマウント用パラメータ（M2.5ネジ + ナット）
-pcb_screw_d = 2.7;        // M2.5通し穴（少し余裕）
-pcb_screw_len = 8;        // M2.5x8ネジの長さ
-pcb_nut_width = 5.0;      // M2.5ナット二面幅
-pcb_nut_depth = 2.5;      // ナットの厚さ（2mm + 余裕）
-pcb_post_d_top = 6;       // ポスト上部の直径
-pcb_post_d_base = 10;     // ポスト底部の直径（円錐形、ナット収容）
+// screw_post ライブラリを使用
+pcb_screw_size = "M2.5";
+pcb_screw_len = 8;        // M2.5 x 8mm ネジ
+pcb_thickness = 1.6;      // PCB 厚さ
 pcb_post_h = 10;          // ポストの高さ（基板の浮き）
+pcb_post_d_base = screw_post_d(pcb_screw_size);  // ライブラリ推奨値
+pcb_post_d_top = pcb_post_d_base * 0.6;          // 上部は60%
 pcb_hole_x = 81;          // 基板固定穴の横幅（中心間距離）
 pcb_hole_y = 76;          // 基板固定穴の縦幅（中心間距離）
 
@@ -216,27 +216,26 @@ color("white") difference() {
             // PCBマウントポスト（底面から立ち上がる、円錐形で強度確保）
             for (pos = pcb_post_positions) {
                 translate([pos[0], pos[1], wall_thickness])
-                    cylinder(h = pcb_post_h, d1 = pcb_post_d_base, d2 = pcb_post_d_top, $fn = 24);
+                    screw_post(pcb_screw_size, h = pcb_post_h,
+                               d_top = pcb_post_d_top, d_base = pcb_post_d_base);
             }
         }
     }
 
     // インサートナット穴を開ける（天板固定用、上から）
     for (pos = boss_positions) {
-        translate([pos[0], pos[1], box_height - insert_hole_depth])
-            cylinder(h = insert_hole_depth + 0.1, d = insert_hole_d, $fn = 24);
+        translate([pos[0], pos[1], box_height])
+            insert_hole("M3", length = "long", extra_depth = 0.3);
     }
 
     // PCBマウント用ネジ穴（貫通）+ ナット凹み（底面から）
-    // M2.5x8ネジ: ポスト高さ10mmに対し8mmなので、ナットはポスト底部に埋め込む
-    // ナットは底面から挿入し、ポスト底部まで入る
+    // ネジ長さと PCB 厚さからナットポケット深さを自動計算
     for (pos = pcb_post_positions) {
-        // ネジ穴（ポスト上面から貫通）
-        translate([pos[0], pos[1], wall_thickness - 0.1])
-            cylinder(h = pcb_post_h + 0.2, d = pcb_screw_d, $fn = 24);
-        // 六角ナット凹み（底面から貫通してポスト底部へ）
-        translate([pos[0], pos[1], -0.1])
-            cylinder(h = wall_thickness + pcb_nut_depth + 0.1, d = pcb_nut_width / cos(30), $fn = 6);
+        translate([pos[0], pos[1], wall_thickness])
+            screw_post_hole(pcb_screw_size, h = pcb_post_h,
+                            screw_length = pcb_screw_len,
+                            material_thickness = pcb_thickness,
+                            base_thickness = wall_thickness);
     }
 }
 
