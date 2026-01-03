@@ -213,13 +213,12 @@ module labels() {
         translate([x, bottom_y + label_offset_y, z])
             label_text(bottom_labels[i]);
     }
+
+    // タイトル（左上）
+    translate([title_x, title_y, z])
+        title_text(panel_title);
 }
 
 // ===== 出力 =====
 color("white") main_panel();
-color("black") {
-    labels();
-    // タイトル（左上）
-    translate([title_x, title_y, plate_thickness - label_depth])
-        title_text(panel_title);
-}
+color("black") labels();

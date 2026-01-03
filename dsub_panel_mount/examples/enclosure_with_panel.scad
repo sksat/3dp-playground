@@ -12,6 +12,7 @@ include <NopSCADlib/vitamins/d_connectors.scad>
 
 // ===== フィットチェック用 =====
 show_connectors = true;  // false にすると非表示
+show_top_panel = true;   // 天板プレビュー
 
 // ===== タイトル・ラベル（カスタマイズ用） =====
 front_title = "D-SUB Enclosure v0.1";
@@ -231,12 +232,14 @@ translate([box_width/2, wall_thickness, front_conn_z])
                 front_title_text(front_title);
         }
 
-// 天板（multi_connector_panel）- プレビュー用、印刷時は別ファイルで
+// ===== 天板プレビュー =====
 // 天板は別途印刷してネジ留めする設計
-// translate([box_width/2, box_depth/2, box_height]) {
-//     color("white") main_panel();
-//     color("black") labels();
-// }
+if (show_top_panel) {
+    translate([box_width/2, box_depth/2, box_height]) {
+        color("white") main_panel();
+        color("black") labels();
+    }
+}
 
 // ===== フィットチェック用コネクタ =====
 // 印刷時は show_connectors = false に
