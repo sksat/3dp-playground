@@ -9,6 +9,9 @@
 use <../dsub_panel_mount.scad>
 include <BOSL2/std.scad>
 
+// ===== タイトル =====
+panel_title = "D-SUB Panel v0.1";
+
 // パラメータ (ライブラリと同じ値を設定)
 plate_thickness = 8;
 plate_margin = 8;
@@ -28,6 +31,10 @@ label_height = 6;      // ラベル用スペースの高さ
 label_font_size = 5;   // フォントサイズ
 label_depth = 1.0;     // 文字の埋め込み深さ
 label_font = "Liberation Sans:style=Bold";
+
+// タイトル設定
+title_font_size = 5;   // タイトルのフォントサイズ（ラベルと同じ）
+title_margin = 5;      // 端からの余白
 
 // ラベル文字列（各行ごとにカスタマイズ可能）
 top_labels = ["COM1", "COM2", "COM3"];       // 上段 DE-9 x3
@@ -87,6 +94,10 @@ module main_panel() {
         // ラベル用の凹み
         label_cutouts();
 
+        // タイトル凹み（左上）
+        translate([title_x, title_y, plate_thickness - label_depth])
+            title_cutout_text(panel_title);
+
         // 四隅のネジ穴（M3キャップボルト用）
         screw_holes();
     }
@@ -125,6 +136,22 @@ module label_cutout_text(txt) {
         offset(delta = 0.05)  // XY方向にわずかに拡大
             text(txt, size = label_font_size, font = label_font, halign = "center", valign = "center");
 }
+
+// ===== タイトル（別マテリアル用） =====
+module title_text(txt) {
+    linear_extrude(height = label_depth)
+        text(txt, size = title_font_size, font = label_font, halign = "left", valign = "top");
+}
+
+module title_cutout_text(txt) {
+    linear_extrude(height = label_depth + 0.1)
+        offset(delta = 0.05)
+            text(txt, size = title_font_size, font = label_font, halign = "left", valign = "top");
+}
+
+// タイトル位置（COM1の左端に揃え、上段ラベルの上）
+title_x = -row_width/2;
+title_y = top_y + label_offset_y + label_font_size + title_font_size + 2;
 
 // ラベル用凹み（板から引く）
 module label_cutouts() {
@@ -178,4 +205,9 @@ module labels() {
 
 // ===== 出力 =====
 color("white") main_panel();
-color("black") labels();
+color("black") {
+    labels();
+    // タイトル（左上）
+    translate([title_x, title_y, plate_thickness - label_depth])
+        title_text(panel_title);
+}
