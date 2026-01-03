@@ -7,10 +7,12 @@
 //     -o output.3mf multi_connector_panel.scad
 
 use <../dsub_panel_mount.scad>
+include <BOSL2/std.scad>
 
 // パラメータ (ライブラリと同じ値を設定)
 plate_thickness = 8;
 plate_margin = 8;
+corner_r = 3;          // 角のフィレット半径（箱と同じ）
 
 // ブラケット寸法
 db9_w = 30.81;   // DE-9 bracket width
@@ -58,9 +60,9 @@ label_offset_y = bracket_h / 2 + label_height / 2 - 1;  // コネクタの上
 // ===== メインパネル =====
 module main_panel() {
     difference() {
-        // 板
-        translate([-panel_width/2, -panel_height/2, 0])
-            cube([panel_width, panel_height, plate_thickness]);
+        // 板（垂直エッジのみ角丸）
+        cuboid([panel_width, panel_height, plate_thickness],
+               rounding=corner_r, edges="Z", anchor=BOTTOM);
 
         // 上段: DE-9 x3
         for (i = [0:2]) {
