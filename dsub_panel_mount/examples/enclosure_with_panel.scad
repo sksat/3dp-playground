@@ -49,7 +49,7 @@ pcb_hole_y = 81;          // 基板固定穴の縦幅
 db9_w = 30.81;
 bracket_h = 12.55;
 front_h_spacing = 5;
-front_conn_z = 25;     // コネクタの高さ位置
+front_conn_z = 35;     // コネクタの高さ位置（上寄り）
 front_row_width = db9_w * 3 + front_h_spacing * 2;
 
 // ラベル設定
@@ -77,18 +77,18 @@ module front_label_cutout_text(txt) {
 // タイトル用テキスト
 module front_title_text(txt) {
     linear_extrude(height = label_depth)
-        text(txt, size = label_font_size, font = label_font, halign = "left", valign = "top");
+        text(txt, size = label_font_size, font = label_font, halign = "left", valign = "bottom");
 }
 
 module front_title_cutout_text(txt) {
     linear_extrude(height = label_depth + 0.1)
         offset(delta = 0.05)
-            text(txt, size = label_font_size, font = label_font, halign = "left", valign = "top");
+            text(txt, size = label_font_size, font = label_font, halign = "left", valign = "bottom");
 }
 
-// タイトル位置（コネクタの左端に揃え、ラベルの上）
+// タイトル位置（左下）
 front_title_x = -front_row_width/2;
-front_title_y = label_offset_y + label_font_size * 2 + 2;
+front_title_y = -front_conn_z + wall_thickness + 5;  // パネル下端 + 余白
 
 // 前面パネル（板 + コネクタ穴 + ラベル凹み）
 // ラベル本体は組み立てセクションで別途追加
