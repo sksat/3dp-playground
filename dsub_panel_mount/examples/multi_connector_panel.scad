@@ -10,6 +10,7 @@ use <../dsub_panel_mount.scad>
 include <BOSL2/std.scad>
 include <NopSCADlib/core.scad>
 include <NopSCADlib/vitamins/d_connectors.scad>
+include <NopSCADlib/vitamins/nuts.scad>
 
 // ===== フィットチェック用 =====
 // 単体で開いた時のデフォルト値
@@ -255,10 +256,60 @@ module panel_connectors() {
     }
 }
 
+// ===== フィットチェック用ナット（M3、パネル裏側） =====
+module panel_nuts() {
+    // dsub_panel_mount.scad の db_opening_table と同じ値を使用
+    // （パネルの穴はこの値で切られている）
+    de9_b = 12.50;   // db_opening_table("db9")[0] - 取付穴中心距離/2
+    da15_b = 16.66;  // db_opening_table("db15")[0]
+
+    // ナット回転角度（D型斜辺に合わせる、dsub_panel_mount.scad と同じ）
+    // D型の斜辺角度: 90° ± 10° (cut_angle=10)
+    // 六角形の辺を斜辺に合わせる: nut_rotation = 90 - 10 - 60 = 20°
+    nut_rotation = 20;
+
+    // ナットはパネル底面 (Z=0) からポケット内に配置
+    // nut() は Z=0 から上に伸びる
+
+    // 上段: DE-9 x3
+    for (i = [0:2]) {
+        x = -row_width/2 + db9_w/2 + i * (db9_w + h_spacing);
+        // 左側: -nut_rotation, 右側: +nut_rotation
+        translate([x - de9_b, top_y + conn_offset_y, 0])
+            rotate([0, 0, -nut_rotation]) nut(M3_nut);
+        translate([x + de9_b, top_y + conn_offset_y, 0])
+            rotate([0, 0, nut_rotation]) nut(M3_nut);
+    }
+
+    // 中段: DE-9 (左)
+    translate([-row_width/2 + db9_w/2 - de9_b, mid_y + conn_offset_y, 0])
+        rotate([0, 0, -nut_rotation]) nut(M3_nut);
+    translate([-row_width/2 + db9_w/2 + de9_b, mid_y + conn_offset_y, 0])
+        rotate([0, 0, nut_rotation]) nut(M3_nut);
+
+    // 中段: DA-15 (右)
+    translate([row_width/2 - db15_w/2 - da15_b, mid_y + conn_offset_y, 0])
+        rotate([0, 0, -nut_rotation]) nut(M3_nut);
+    translate([row_width/2 - db15_w/2 + da15_b, mid_y + conn_offset_y, 0])
+        rotate([0, 0, nut_rotation]) nut(M3_nut);
+
+    // 下段: DE-9 x3
+    for (i = [0:2]) {
+        x = -row_width/2 + db9_w/2 + i * (db9_w + h_spacing);
+        translate([x - de9_b, bottom_y + conn_offset_y, 0])
+            rotate([0, 0, -nut_rotation]) nut(M3_nut);
+        translate([x + de9_b, bottom_y + conn_offset_y, 0])
+            rotate([0, 0, nut_rotation]) nut(M3_nut);
+    }
+}
+
 // ===== 出力 =====
 // show_top_panel が未定義 = 単体で開いている → 出力
 // include された場合は呼び出し側で制御
 if (is_undef(show_top_panel)) {
     enclosure_top_panel();
-    if (show_connectors) panel_connectors();
+    if (show_connectors) {
+        panel_connectors();
+        panel_nuts();
+    }
 }

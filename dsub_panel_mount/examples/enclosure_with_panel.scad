@@ -8,6 +8,7 @@ use <../dsub_panel_mount.scad>
 include <BOSL2/std.scad>
 include <NopSCADlib/core.scad>
 include <NopSCADlib/vitamins/d_connectors.scad>
+include <NopSCADlib/vitamins/nuts.scad>
 
 // ===== フィットチェック用 =====
 show_top_panel = true;   // 天板プレビュー
@@ -241,19 +242,39 @@ translate([box_width/2, wall_thickness, front_conn_z])
 if (show_top_panel) {
     translate([box_width/2, box_depth/2, box_height]) {
         enclosure_top_panel();
-        if (show_connectors) panel_connectors();
+        if (show_connectors) {
+            panel_connectors();
+            panel_nuts();
+        }
     }
 }
 
-// ===== フィットチェック用コネクタ =====
+// ===== フィットチェック用コネクタ・ナット =====
 // 印刷時は show_connectors = false に
 if (show_connectors) {
+    // 前面コネクタ + M3 ナット
+    // 取付穴位置: dsub_panel_mount.scad の db_opening_table と同じ値
+    de9_b = 12.50;  // db_opening_table("db9")[0] - 取付穴中心距離/2
+    nut_rotation = 20;  // D型斜辺に合わせた回転角度
     translate([box_width/2, wall_thickness, front_conn_z])
         rotate([90, 0, 0])
             for (i = [0:2]) {
                 x = -front_row_width/2 + db9_w/2 + i * (db9_w + front_h_spacing);
+                // コネクタ
                 translate([x, 0, wall_thickness])
                     d_socket(DCONN9);
+                // M3 ナット（内側、ブラケット固定用）
+                // 左側: -rotation, 右側: +rotation
+                translate([x - de9_b, 0, 0])
+                    rotate([0, 0, -nut_rotation]) nut(M3_nut);
+                translate([x + de9_b, 0, 0])
+                    rotate([0, 0, nut_rotation]) nut(M3_nut);
             }
+
+    // PCBマウント用 M2.5 ナット（底面ナットポケット内）
+    for (pos = pcb_post_positions) {
+        translate([pos[0], pos[1], wall_thickness])
+            nut(M2p5_nut);
+    }
 }
 
