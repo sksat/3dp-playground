@@ -8,6 +8,11 @@
 
 use <../dsub_panel_mount.scad>
 include <BOSL2/std.scad>
+include <NopSCADlib/core.scad>
+include <NopSCADlib/vitamins/d_connectors.scad>
+
+// ===== フィットチェック用 =====
+show_connectors = true;  // false にすると非表示
 
 // ===== タイトル・ラベル（カスタマイズ用） =====
 panel_title = "D-SUB Panel v0.1";
@@ -222,3 +227,26 @@ module labels() {
 // ===== 出力 =====
 color("white") main_panel();
 color("black") labels();
+
+// ===== フィットチェック用コネクタ =====
+if (show_connectors) {
+    // 上段: DE-9 x3
+    for (i = [0:2]) {
+        x = -row_width/2 + db9_w/2 + i * (db9_w + h_spacing);
+        translate([x, top_y + conn_offset_y, plate_thickness])
+            d_socket(DCONN9);
+    }
+
+    // 中段: DE-9 (左) + DA-15 (右)
+    translate([-row_width/2 + db9_w/2, mid_y + conn_offset_y, plate_thickness])
+        d_socket(DCONN9);
+    translate([row_width/2 - db15_w/2, mid_y + conn_offset_y, plate_thickness])
+        d_socket(DCONN15);
+
+    // 下段: DE-9 x3
+    for (i = [0:2]) {
+        x = -row_width/2 + db9_w/2 + i * (db9_w + h_spacing);
+        translate([x, bottom_y + conn_offset_y, plate_thickness])
+            d_socket(DCONN9);
+    }
+}
