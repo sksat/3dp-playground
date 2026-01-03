@@ -5,6 +5,7 @@
 //     -o enclosure.3mf enclosure_with_panel.scad
 
 use <../dsub_panel_mount.scad>
+use <mock_pcb.scad>
 include <BOSL2/std.scad>
 include <NopSCADlib/core.scad>
 include <NopSCADlib/vitamins/d_connectors.scad>
@@ -12,6 +13,7 @@ include <NopSCADlib/vitamins/nuts.scad>
 
 // ===== フィットチェック用 =====
 show_top_panel = true;   // 天板プレビュー
+show_pcb = true;         // 模擬基板
 
 // 天板を include（show_top_panel が定義済みなら出力抑制）
 include <multi_connector_panel.scad>
@@ -53,8 +55,12 @@ pcb_nut_depth = 2.5;      // ナットの厚さ（2mm + 余裕）
 pcb_post_d_top = 6;       // ポスト上部の直径
 pcb_post_d_base = 10;     // ポスト底部の直径（円錐形、ナット収容）
 pcb_post_h = 10;          // ポストの高さ（基板の浮き）
-pcb_hole_x = 88;          // 基板固定穴の横幅
-pcb_hole_y = 81;          // 基板固定穴の縦幅
+pcb_hole_x = 81;          // 基板固定穴の横幅（中心間距離）
+pcb_hole_y = 76;          // 基板固定穴の縦幅（中心間距離）
+
+// 模擬基板パラメータ（フィットチェック用）
+pcb_board_width = 88;     // 基板外形の幅
+pcb_board_depth = 81;     // 基板外形の奥行き
 
 // 前面コネクタ配置
 db9_w = 30.81;
@@ -276,5 +282,14 @@ if (show_connectors) {
         translate([pos[0], pos[1], wall_thickness])
             nut(M2p5_nut);
     }
+}
+
+// ===== フィットチェック用 PCB =====
+// 印刷時は show_pcb = false に
+if (show_pcb) {
+    // ポスト上面に配置（底面中心が原点）
+    translate([box_width/2, box_depth/2, wall_thickness + pcb_post_h])
+        mock_pcb(width=pcb_board_width, depth=pcb_board_depth,
+                 hole_x=pcb_hole_x, hole_y=pcb_hole_y);
 }
 
