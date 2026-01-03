@@ -12,7 +12,9 @@ include <NopSCADlib/core.scad>
 include <NopSCADlib/vitamins/d_connectors.scad>
 
 // ===== フィットチェック用 =====
-show_connectors = true;  // false にすると非表示
+// 単体で開いた時のデフォルト値
+// include される場合は呼び出し側で show_connectors を定義
+show_connectors = true;
 
 // ===== タイトル・ラベル（カスタマイズ用） =====
 panel_title = "D-SUB Panel v0.1";
@@ -254,5 +256,9 @@ module panel_connectors() {
 }
 
 // ===== 出力 =====
-enclosure_top_panel();
-if (show_connectors) panel_connectors();
+// show_top_panel が未定義 = 単体で開いている → 出力
+// include された場合は呼び出し側で制御
+if (is_undef(show_top_panel)) {
+    enclosure_top_panel();
+    if (show_connectors) panel_connectors();
+}

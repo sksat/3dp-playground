@@ -5,14 +5,18 @@
 //     -o enclosure.3mf enclosure_with_panel.scad
 
 use <../dsub_panel_mount.scad>
-use <multi_connector_panel.scad>
 include <BOSL2/std.scad>
 include <NopSCADlib/core.scad>
 include <NopSCADlib/vitamins/d_connectors.scad>
 
 // ===== フィットチェック用 =====
-show_connectors = true;  // false にすると非表示
 show_top_panel = true;   // 天板プレビュー
+
+// 天板を include（show_top_panel が定義済みなら出力抑制）
+include <multi_connector_panel.scad>
+
+// Customizer 用に include 後に再定義
+show_connectors = true;  // false にすると非表示
 
 // ===== タイトル・ラベル（カスタマイズ用） =====
 front_title = "D-SUB Enclosure v0.1";
@@ -237,7 +241,7 @@ translate([box_width/2, wall_thickness, front_conn_z])
 if (show_top_panel) {
     translate([box_width/2, box_depth/2, box_height]) {
         enclosure_top_panel();
-        panel_connectors();
+        if (show_connectors) panel_connectors();
     }
 }
 
