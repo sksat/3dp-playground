@@ -315,6 +315,35 @@ if (show_connectors) {
 - `intersection()` 内に配置 → 外形でクリップされてコネクタが消える
 - 回転後の向きが想定と違う → パネルローカル座標での Y 軸方向に注意
 
+**モジュール構成のパターン:**
+
+```openscad
+// パネル本体（印刷対象）
+module enclosure_top_panel() {
+    color("white") main_panel();
+    color("black") labels();
+}
+
+// フィットチェック用コネクタ（印刷対象外）
+module panel_connectors() {
+    d_socket(DCONN9);
+    // ...
+}
+
+// 組み立て側で制御
+if (show_top_panel) {
+    translate([...]) {
+        enclosure_top_panel();
+        if (show_connectors) panel_connectors();
+    }
+}
+```
+
+**ポイント:**
+- 印刷対象とフィットチェック用を別モジュールに分離
+- 複数のフラグで個別に表示制御（天板全体 / コネクタのみ）
+- Customizer から切り替え可能にして確認しやすく
+
 **画像生成による確認:**
 
 ```bash
@@ -329,6 +358,50 @@ openscad -o output.png --imgsize=800,600 \
 ```
 
 フロントパネルを確認する場合は、カメラを正面寄りに配置する（$vpr の Z 成分を調整）。
+
+### Module Sharing with include (include によるモジュール共有)
+
+別ファイルで定義したモジュールと変数を共有する場合:
+
+**`use` vs `include`:**
+- `use`: モジュールと関数のみ取り込み、変数やトップレベルコードは実行されない
+- `include`: ファイル全体を挿入、変数も共有される
+
+**include パターンの例:**
+
+```openscad
+// panel.scad（include される側）
+show_connectors = true;  // 単体で開いた時のデフォルト
+
+module panel() { ... }
+module panel_connectors() { ... }
+
+// show_top_panel が未定義 = 単体で開いている
+if (is_undef(show_top_panel)) {
+    panel();
+    if (show_connectors) panel_connectors();
+}
+```
+
+```openscad
+// enclosure.scad（include する側）
+show_top_panel = true;  // include 前に定義 → Customizer に表示
+
+include <panel.scad>
+
+// include 後に再定義 → Customizer に表示 & 最終値として使用
+show_connectors = true;
+
+if (show_top_panel) {
+    translate([...]) panel();
+    if (show_connectors) panel_connectors();
+}
+```
+
+**ポイント:**
+- Customizer は変数定義の順序を見る。include 後に再定義すると表示される
+- `is_undef(変数)` で include 元からの呼び出しを検出
+- 共有したい変数は include 前後で同じ名前を使う
 
 ### Screw Fastening Design (ネジ固定の設計)
 
