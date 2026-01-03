@@ -53,3 +53,17 @@ When designing mechanical parts, calculate relationships properly:
 - Include `tolerance` parameter (typically 0.2-0.4mm)
 - Add small offsets (0.1mm) to boolean operations to avoid z-fighting
 - Use `difference()` with cutout modules for subtractive operations
+
+### Multi-Color Printing
+
+OpenSCAD 2024以降 + lazy-union で、`color()` で指定した色ごとに別オブジェクトとして3MF出力可能:
+
+```bash
+openscad --enable=lazy-union -O export-3mf/material-type=color \
+  -o output.3mf input.scad
+```
+
+設計時の注意:
+- 各パーツに `color()` を指定
+- インレイ（埋め込み文字等）は凹みを少し大きく作り、Z-fightingを回避
+- STL形式は単一メッシュのみ対応のため、マルチカラーには3MFを使用
