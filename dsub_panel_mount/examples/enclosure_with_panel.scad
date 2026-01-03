@@ -25,6 +25,17 @@ insert_hole_depth = 6; // 穴深さ（インサート長さ5mm + 余裕1mm）
 boss_d = 8;            // ボス（柱）の直径（インサート穴 + 肉厚）
 boss_inset = boss_d / 2;  // ボス中心の端からの距離
 
+// PCBマウント用パラメータ（M2.5ネジ + ナット）
+pcb_screw_d = 2.7;        // M2.5通し穴（少し余裕）
+pcb_screw_len = 8;        // M2.5x8ネジの長さ
+pcb_nut_width = 5.0;      // M2.5ナット二面幅
+pcb_nut_depth = 2.5;      // ナットの厚さ（2mm + 余裕）
+pcb_post_d_top = 6;       // ポスト上部の直径
+pcb_post_d_base = 10;     // ポスト底部の直径（円錐形、ナット収容）
+pcb_post_h = 10;          // ポストの高さ（基板の浮き）
+pcb_hole_x = 88;          // 基板固定穴の横幅
+pcb_hole_y = 81;          // 基板固定穴の縦幅
+
 // 前面コネクタ配置
 db9_w = 30.81;
 bracket_h = 12.55;
@@ -106,12 +117,22 @@ module box_body() {
 }
 
 // ===== 組み立て =====
-// 四隅のボス位置
+// 四隅のボス位置（天板固定用）
 boss_positions = [
     [boss_inset, boss_inset],                           // 左前
     [box_width - boss_inset, boss_inset],               // 右前
     [boss_inset, box_depth - boss_inset],               // 左後
     [box_width - boss_inset, box_depth - boss_inset]    // 右後
+];
+
+// PCBマウントポスト位置（底面中央に配置）
+// 箱の中心: (box_width/2, box_depth/2) = (60, 55)
+// 穴位置: 中心 ± (pcb_hole_x/2, pcb_hole_y/2)
+pcb_post_positions = [
+    [box_width/2 - pcb_hole_x/2, box_depth/2 - pcb_hole_y/2],  // 左前
+    [box_width/2 + pcb_hole_x/2, box_depth/2 - pcb_hole_y/2],  // 右前
+    [box_width/2 - pcb_hole_x/2, box_depth/2 + pcb_hole_y/2],  // 左後
+    [box_width/2 + pcb_hole_x/2, box_depth/2 + pcb_hole_y/2]   // 右後
 ];
 
 // 箱本体 + 前面パネル + ボス → インサート穴
@@ -135,13 +156,31 @@ color("white") difference() {
                 translate([pos[0], pos[1], wall_thickness])
                     cylinder(h = box_height - wall_thickness, d = boss_d, $fn = 24);
             }
+
+            // PCBマウントポスト（底面から立ち上がる、円錐形で強度確保）
+            for (pos = pcb_post_positions) {
+                translate([pos[0], pos[1], wall_thickness])
+                    cylinder(h = pcb_post_h, d1 = pcb_post_d_base, d2 = pcb_post_d_top, $fn = 24);
+            }
         }
     }
 
-    // インサートナット穴を開ける
+    // インサートナット穴を開ける（天板固定用、上から）
     for (pos = boss_positions) {
         translate([pos[0], pos[1], box_height - insert_hole_depth])
             cylinder(h = insert_hole_depth + 0.1, d = insert_hole_d, $fn = 24);
+    }
+
+    // PCBマウント用ネジ穴（貫通）+ ナット凹み（底面から）
+    // M2.5x8ネジ: ポスト高さ10mmに対し8mmなので、ナットはポスト底部に埋め込む
+    // ナットは底面から挿入し、ポスト底部まで入る
+    for (pos = pcb_post_positions) {
+        // ネジ穴（ポスト上面から貫通）
+        translate([pos[0], pos[1], wall_thickness - 0.1])
+            cylinder(h = pcb_post_h + 0.2, d = pcb_screw_d, $fn = 24);
+        // 六角ナット凹み（底面から貫通してポスト底部へ）
+        translate([pos[0], pos[1], -0.1])
+            cylinder(h = wall_thickness + pcb_nut_depth + 0.1, d = pcb_nut_width / cos(30), $fn = 6);
     }
 }
 
