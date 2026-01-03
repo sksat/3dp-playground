@@ -6,12 +6,14 @@
 
 use <../dsub_panel_mount.scad>
 use <multi_connector_panel.scad>
+include <BOSL2/std.scad>
 
 // 箱のパラメータ
 box_width = 120;       // パネルと同じ
 box_depth = 110;       // パネルと同じ
 box_height = 50;       // 箱の高さ（天板除く）
 wall_thickness = 3;    // 壁の厚さ
+corner_r = 3;          // 角のフィレット半径
 
 // パネルパラメータ（multi_connector_panel.scadと同じ）
 plate_thickness = 8;
@@ -62,7 +64,7 @@ module front_panel() {
     front_panel_width = box_width;
 
     difference() {
-        // 板（コネクタ中心が原点）
+        // 板（コネクタ中心が原点、箱本体の角丸と一体化）
         translate([-front_panel_width/2, -front_conn_z + wall_thickness, 0])
             cube([front_panel_width, front_panel_height, wall_thickness]);
 
@@ -82,18 +84,20 @@ module front_panel() {
     }
 }
 
-// ===== 箱本体（シンプル、ボスなし） =====
+// ===== 箱本体（シンプル、ボスなし、角丸） =====
 module box_body() {
     difference() {
-        cube([box_width, box_depth, box_height]);
+        // 外形（垂直エッジのみ角丸）
+        cuboid([box_width, box_depth, box_height],
+               rounding=corner_r, edges="Z", anchor=BOTTOM+LEFT+FRONT);
 
-        // 内側をくり抜き
+        // 内側をくり抜き（角丸）
+        inner_r = max(corner_r - wall_thickness, 0);
         translate([wall_thickness, wall_thickness, wall_thickness])
-            cube([
-                box_width - wall_thickness * 2,
-                box_depth - wall_thickness * 2,
-                box_height
-            ]);
+            cuboid([box_width - wall_thickness * 2,
+                    box_depth - wall_thickness * 2,
+                    box_height],
+                   rounding=inner_r, edges="Z", anchor=BOTTOM+LEFT+FRONT);
 
         // 前面壁をくり抜き（前面パネルが入る場所）
         translate([0, -0.1, wall_thickness])
@@ -112,19 +116,25 @@ boss_positions = [
 
 // 箱本体 + 前面パネル + ボス → インサート穴
 color("white") difference() {
-    union() {
-        // 箱本体
-        box_body();
+    intersection() {
+        // 外形で全体をトリミング（角丸を統一）
+        cuboid([box_width, box_depth, box_height],
+               rounding=corner_r, edges="Z", anchor=BOTTOM+LEFT+FRONT);
 
-        // 前面パネル（回転して配置）
-        translate([box_width/2, wall_thickness, front_conn_z])
-            rotate([90, 0, 0])
-                front_panel();
+        union() {
+            // 箱本体
+            box_body();
 
-        // 四隅にボス（柱）を追加
-        for (pos = boss_positions) {
-            translate([pos[0], pos[1], wall_thickness])
-                cylinder(h = box_height - wall_thickness, d = boss_d, $fn = 24);
+            // 前面パネル（回転して配置）
+            translate([box_width/2, wall_thickness, front_conn_z])
+                rotate([90, 0, 0])
+                    front_panel();
+
+            // 四隅にボス（柱）を追加
+            for (pos = boss_positions) {
+                translate([pos[0], pos[1], wall_thickness])
+                    cylinder(h = box_height - wall_thickness, d = boss_d, $fn = 24);
+            }
         }
     }
 

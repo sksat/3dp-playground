@@ -221,3 +221,43 @@ for (i = [0:2]) {
 - ラベル文字列をファイル先頭で一括管理
 - コネクタの用途に応じたラベル付け（"COM1", "VIDEO", "CTRL"など）
 - 配置ロジックとラベル内容を分離
+
+### Fillets with BOSL2 (角丸・フィレット)
+
+BOSL2 ライブラリの `cuboid()` で簡単に角丸を実現:
+
+```bash
+# インストール
+git clone https://github.com/BelfrySCAD/BOSL2.git ~/.local/share/OpenSCAD/libraries/BOSL2
+```
+
+```openscad
+include <BOSL2/std.scad>
+
+// 垂直エッジのみ角丸（底面は印刷用に平ら）
+cuboid([width, depth, height], rounding=3, edges="Z", anchor=BOTTOM+LEFT+FRONT);
+```
+
+**複数パーツの角丸を統一する場合:**
+
+各パーツに個別のフィレットをかけると形状が合わない。`intersection()` で外形トリミング:
+
+```openscad
+difference() {
+    intersection() {
+        // 外形で全体をトリミング
+        cuboid([w, d, h], rounding=r, edges="Z", anchor=BOTTOM+LEFT+FRONT);
+
+        union() {
+            box_body();
+            front_panel();  // パネルは cube() でOK
+        }
+    }
+    // 穴あけ
+}
+```
+
+**ポイント:**
+- 各パーツに個別フィレット → 形状不一致
+- `intersection()` で外形トリミング → 統一された角丸
+- `edges="Z"` で垂直エッジのみ（印刷向け）
