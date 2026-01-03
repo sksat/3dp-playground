@@ -248,6 +248,48 @@ module multi_dsub_panel_rows(rows, h_spacing = 5, v_spacing = 5) {
     }
 }
 
+// ===== ライブラリ用モジュール =====
+
+// 単一コネクタの切り欠き (difference用)
+// 任意の板に対して使用可能
+module dsub_cutout(conn_type) {
+    bracket = db_bracket_table(conn_type);
+    bracket_w = bracket[0];
+    bracket_h = bracket[1];
+
+    // フランジ用ザグリ (上面)
+    translate([0, 0, plate_thickness - flange_recess_depth])
+        dsub_flange_recess(bracket_w + tolerance, bracket_h + tolerance, flange_corner_r, flange_recess_depth + 0.1);
+
+    // D-Sub開口部 (貫通)
+    translate([0, 0, -0.1])
+        dsub_opening(conn_type, tolerance, plate_thickness + 0.2);
+
+    // M3ナット凹み (裏面)
+    translate([0, 0, -0.1])
+        dsub_nut_recesses(conn_type, m3_nut_depth + 0.1);
+}
+
+// DE-9 (9pin) 専用
+module de9_cutout() {
+    dsub_cutout("db9");
+}
+
+// DA-15 (15pin) 専用
+module da15_cutout() {
+    dsub_cutout("db15");
+}
+
+// DB-25 (25pin) 専用
+module db25_cutout() {
+    dsub_cutout("db25");
+}
+
+// DC-37 (37pin) 専用
+module dc37_cutout() {
+    dsub_cutout("db37");
+}
+
 // ===== カスタムレイアウト用パネル =====
 
 // 各コネクタを [タイプ, x位置, y位置] で指定
@@ -294,7 +336,16 @@ h_spacing = 5;
 test_width = db9_w + db15_w + h_spacing + plate_margin * 2;
 test_height = bracket_h + plate_margin * 2;
 
-custom_dsub_panel([
-    ["db9", -(db15_w + h_spacing) / 2, 0],
-    ["db15", (db9_w + h_spacing) / 2, 0]
-], test_width, test_height);
+difference() {
+    // 板
+    translate([-test_width/2, -test_height/2, 0])
+        cube([test_width, test_height, plate_thickness]);
+
+    // DE-9
+    translate([-(db15_w + h_spacing) / 2, 0, 0])
+        de9_cutout();
+
+    // DA-15
+    translate([(db9_w + h_spacing) / 2, 0, 0])
+        da15_cutout();
+}
