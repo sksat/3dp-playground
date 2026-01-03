@@ -7,7 +7,7 @@
 //   前面: DE-9 x3
 // 使用ネジ:
 //   天板固定: M3ヒートセットインサート x4
-//   PCB固定: M2.5ネジ + ナット x4
+//   PCB固定: M3 x 20mm ネジ + ナット x4
 // 依存: dsub_panel_mount.scad, mock_pcb.scad, BOSL2, NopSCADlib
 //
 // マルチカラー印刷対応: 箱（白）と文字（黒）が別オブジェクト
@@ -59,12 +59,13 @@ plate_thickness = 8;
 boss_d = insert_boss_d("M3", wall = 2);
 boss_inset = boss_d / 2;  // ボス中心の端からの距離
 
-// PCBマウント用パラメータ（M2.5ネジ + ナット）
+// PCBマウント用パラメータ（M3ネジ + ナット）
 // screw_post ライブラリを使用
-pcb_screw_size = "M2.5";
-pcb_screw_len = 8;        // M2.5 x 8mm ネジ
+pcb_screw_size = "M3";
 pcb_thickness = 1.6;      // PCB 厚さ
-pcb_post_h = 10;          // ポストの高さ（基板の浮き）
+pcb_post_h = 15;          // ポストの高さ（基板の浮き）
+// 理想的なネジ長さ ≒ pcb_post_h + wall_thickness + pcb_thickness = 19.6mm → 20mm
+pcb_screw_len = 20;
 pcb_post_d_base = screw_post_d(pcb_screw_size);  // ライブラリ推奨値
 pcb_post_d_top = pcb_post_d_base * 0.6;          // 上部は60%
 pcb_hole_x = 81;          // 基板固定穴の横幅（中心間距離）
