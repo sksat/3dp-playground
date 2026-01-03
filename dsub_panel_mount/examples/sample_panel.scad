@@ -1,5 +1,5 @@
 // サンプル: DE-9 と DA-15 を横に並べたテスト用パネル
-use <dsub_panel_mount.scad>
+use <../dsub_panel_mount.scad>
 
 // パラメータ (ライブラリと同じ値を設定)
 plate_thickness = 8;
