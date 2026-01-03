@@ -1,6 +1,11 @@
 // サンプル: 複数D-SUBコネクタを配置したパネル（ラベル付き）
 // DE-9 x3 (上段) + DE-9 + DA-15 (中段) + DE-9 x3 (下段)
 // マルチカラー印刷対応: 板と文字が別オブジェクト
+//
+// 出力 (OpenSCAD 2024以降 + lazy-union):
+//   openscad --enable=lazy-union -O export-3mf/material-type=color \
+//     -o output.3mf multi_connector_panel.scad
+
 use <../dsub_panel_mount.scad>
 
 // パラメータ (ライブラリと同じ値を設定)
@@ -133,11 +138,5 @@ module labels() {
 }
 
 // ===== 出力 =====
-// スライサーで別マテリアルとして扱うには:
-// 1. OpenSCADで両方を表示してSTL出力（単色の場合）
-// 2. または main_panel() と labels() を別々にSTL出力して
-//    スライサーでインポート・位置合わせ
-
-// デフォルト: 両方表示
-main_panel();
-color("white") labels();
+color("white") main_panel();
+color("black") labels();
