@@ -27,11 +27,13 @@ label_font_size = 5;   // フォントサイズ
 label_depth = 1.0;     // 文字の埋め込み深さ
 label_font = "Liberation Sans:style=Bold";
 
-// パネルサイズ（ラベル用スペースを追加）
+// パネルサイズ（固定）
+panel_width = 120;   // 横 12cm
+panel_height = 110;  // 縦 11cm
+
+// コネクタ配置用の計算
 row_width = db9_w * 3 + h_spacing * 2;  // DE-9 x3
-panel_width = row_width + plate_margin * 2;
 row_total_height = bracket_h + label_height;  // コネクタ + ラベル
-panel_height = row_total_height * 3 + v_spacing * 2 + plate_margin * 2;
 
 // Y座標（ラベルはコネクタの上）
 top_y = row_total_height + v_spacing;

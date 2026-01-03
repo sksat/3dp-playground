@@ -54,6 +54,31 @@ When designing mechanical parts, calculate relationships properly:
 - Add small offsets (0.1mm) to boolean operations to avoid z-fighting
 - Use `difference()` with cutout modules for subtractive operations
 
+### Side-Mounted Cutouts (垂直壁へのカットアウト配置)
+
+水平パネル用に設計されたカットアウトを垂直壁に配置する場合、複数の変換が必要。
+
+**よくある勘違い:**
+- 180°回転で両端が入れ替わると思いがち → 回転は原点を固定するので Z=0 にあるものは Z=0 のまま
+- 1つの回転で複数の要件（形状の向き、ナット位置、壁への向き）を満たそうとする → 各要件に対応する変換が必要
+
+**正しいアプローチ:**
+```openscad
+// 前面壁へのDE-9配置例（広い側が上、ナットは内側）
+translate([x, -0.1, z])
+    rotate([-90, 0, 0])              // 3. 壁に向ける
+        translate([0, 0, depth/2])
+            rotate([0, 180, 0])      // 2. 中心で反転してナット/ブラケット入替
+                translate([0, 0, -depth/2])
+                    rotate([0, 0, 180])  // 1. D形状の向き調整
+                        de9_cutout();
+```
+
+**ポイント:**
+- 両端を入れ替えるには translate → rotate → translate（中心に移動→回転→戻す）
+- 各変換の効果を論理的に追跡する（試行錯誤ではなく）
+- OpenSCADの回転方向: `rotate([90,0,0])` で Y→+Z、`rotate([-90,0,0])` で Y→-Z
+
 ### Multi-Color Printing
 
 OpenSCAD 2024以降 + lazy-union で、`color()` で指定した色ごとに別オブジェクトとして3MF出力可能:
