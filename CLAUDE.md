@@ -205,11 +205,6 @@ openscad --enable=lazy-union -O export-3mf/material-type=color \
 複数のラベルを個別にカスタマイズする場合、文字列配列で定義:
 
 ```openscad
-// ラベル文字列（カスタマイズ可能）
-top_labels = ["COM1", "COM2", "COM3"];
-mid_labels = ["COM4", "COM5"];
-bottom_labels = ["COM6", "COM7", "COM8"];
-
 // ラベル配置（forループでインデックス参照）
 for (i = [0:2]) {
     translate([x_positions[i], y, z])
@@ -217,10 +212,29 @@ for (i = [0:2]) {
 }
 ```
 
+**Customizer 対応:**
+
+OpenSCAD の Customizer は配列をサポートしていない。Customizer から編集可能にするには個別変数を使用:
+
+```openscad
+// Customizer で編集可能
+top_label_1 = "COM1";
+top_label_2 = "COM2";
+top_label_3 = "COM3";
+top_labels = [top_label_1, top_label_2, top_label_3];
+```
+
+配列リテラルで直接定義すると Customizer に表示されない:
+```openscad
+// Customizer に表示されない
+top_labels = ["COM1", "COM2", "COM3"];
+```
+
 **利点:**
 - ラベル文字列をファイル先頭で一括管理
 - コネクタの用途に応じたラベル付け（"COM1", "VIDEO", "CTRL"など）
 - 配置ロジックとラベル内容を分離
+- 個別変数にすれば Customizer からも編集可能
 
 ### Fillets with BOSL2 (角丸・フィレット)
 
