@@ -36,6 +36,66 @@ openscad --enable=lazy-union -O export-3mf/material-type=color \
 - インレイ（埋め込み文字等）は凹みを少し大きく作り、Z-fightingを回避
 - STL形式は単一メッシュのみ対応のため、マルチカラーには3MFを使用
 
+## File Structure (ファイル構造)
+
+SCADファイルは以下の順序で構成する:
+
+### 1. ヘッダーコメント
+
+ファイル先頭に目的と仕様を記載:
+- 目的: ファイルの役割（ライブラリ、サンプル、製品など）
+- 外形サイズ: 出力モデルの寸法（幅 x 奥行き x 高さ）
+- 使用パーツ: コネクタ、ネジ、ナットなど外部パーツの種類と数量
+- 依存関係: 必要なライブラリ
+- ビルドコマンド: 出力方法（マルチカラー等）
+
+```openscad
+// [タイトル]
+// [簡単な説明]
+//
+// 外形: 120mm x 110mm x 8mm
+// 使用コネクタ: DE-9 x7, DA-15 x1
+// 使用ネジ: M3キャップボルト x4
+// 依存: BOSL2, NopSCADlib
+//
+// ビルド:
+//   openscad --enable=lazy-union -o output.3mf filename.scad
+```
+
+### 2. use / include 文
+
+外部ファイルのインポート。`use` と `include` の使い分けは「Module Sharing with include」セクション参照。
+
+### 3. Customizer 用パラメータ
+
+OpenSCAD Customizer から編集可能にしたい変数。
+
+**配列の扱い:**
+
+OpenSCAD の Customizer は配列をサポートしていない。Customizer から編集可能にするには個別変数を使用:
+
+```openscad
+// Customizer で編集可能
+top_label_1 = "COM1";
+top_label_2 = "COM2";
+top_label_3 = "COM3";
+top_labels = [top_label_1, top_label_2, top_label_3];
+```
+
+配列リテラルで直接定義すると Customizer に表示されない:
+```openscad
+// Customizer に表示されない
+top_labels = ["COM1", "COM2", "COM3"];
+```
+
+### 4. 一般パラメータ
+
+内部で使用する寸法、計算値など。
+
+### 5. モジュール定義
+
+### 6. 組み立て / 出力
+
 ## Design Philosophy
 
 ### Reference Existing Standards
@@ -201,42 +261,6 @@ boss_d = 8;               // ボス直径（穴 + 肉厚）
 
 - 穴は上面から開ける（印刷後にインサートを熱圧入）
 - ボス（柱）で薄い壁にも対応可能
-
-### Parameterized Labels (配列によるラベル管理)
-
-複数のラベルを個別にカスタマイズする場合、文字列配列で定義:
-
-```openscad
-// ラベル配置（forループでインデックス参照）
-for (i = [0:2]) {
-    translate([x_positions[i], y, z])
-        label_text(top_labels[i]);
-}
-```
-
-**Customizer 対応:**
-
-OpenSCAD の Customizer は配列をサポートしていない。Customizer から編集可能にするには個別変数を使用:
-
-```openscad
-// Customizer で編集可能
-top_label_1 = "COM1";
-top_label_2 = "COM2";
-top_label_3 = "COM3";
-top_labels = [top_label_1, top_label_2, top_label_3];
-```
-
-配列リテラルで直接定義すると Customizer に表示されない:
-```openscad
-// Customizer に表示されない
-top_labels = ["COM1", "COM2", "COM3"];
-```
-
-**利点:**
-- ラベル文字列をファイル先頭で一括管理
-- コネクタの用途に応じたラベル付け（"COM1", "VIDEO", "CTRL"など）
-- 配置ロジックとラベル内容を分離
-- 個別変数にすれば Customizer からも編集可能
 
 ### Fillets with BOSL2 (角丸・フィレット)
 

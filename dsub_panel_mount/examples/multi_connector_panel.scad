@@ -1,8 +1,14 @@
-// サンプル: 複数D-SUBコネクタを配置したパネル（ラベル付き）
-// DE-9 x3 (上段) + DE-9 + DA-15 (中段) + DE-9 x3 (下段)
-// マルチカラー印刷対応: 板と文字が別オブジェクト
+// 複数D-SUBコネクタを配置したパネル（ラベル付き）
+// enclosure_with_panel.scad の天板として使用
 //
-// 出力 (OpenSCAD 2024以降 + lazy-union):
+// 外形: 120mm x 110mm x 8mm
+// 使用コネクタ: DE-9 x7, DA-15 x1
+// 使用ネジ: M3キャップボルト x4（四隅固定用）
+// 依存: dsub_panel_mount.scad, BOSL2, NopSCADlib
+//
+// マルチカラー印刷対応: 板（白）と文字（黒）が別オブジェクト
+//
+// ビルド (OpenSCAD 2024以降 + lazy-union):
 //   openscad --enable=lazy-union -O export-3mf/material-type=color \
 //     -o output.3mf multi_connector_panel.scad
 

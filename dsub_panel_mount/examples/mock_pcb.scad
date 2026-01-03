@@ -1,7 +1,13 @@
 // 模擬基板モジュール（フィットチェック用）
+// エンクロージャー内の基板配置を視覚的に確認するためのモデル
 //
-// use <mock_pcb.scad> でインポートして使用
-// パラメータは引数で渡す
+// 提供モジュール:
+//   mock_pcb(width, depth, thickness, corner_r, hole_d, hole_x, hole_y)
+//
+// 外形: パラメータで指定（単体プレビュー: 88mm x 81mm x 1.6mm）
+// 依存: BOSL2
+//
+// 使用方法: use <mock_pcb.scad> でインポート、パラメータは引数で渡す
 
 include <BOSL2/std.scad>
 

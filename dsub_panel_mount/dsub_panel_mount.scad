@@ -1,8 +1,16 @@
-// D-SUB Panel Mount Bracket (Top Panel for Enclosure)
-// D-Subコネクタ用パネルマウント天板
+// D-SUB Panel Mount Library
+// D-Subコネクタ用パネルマウントライブラリ
 //
-// D-Sub形状: dpeart氏のライブラリを参考 (http://forums.reprap.org/read.php?313,577003)
-// ブラケット寸法: NopSCADlib を参考 (https://github.com/nophead/NopSCADlib)
+// 提供モジュール:
+//   de9_cutout(), da15_cutout(), db25_cutout(), dc37_cutout()
+//   dsub_cutout(type) - 汎用版
+//
+// 対応コネクタ: DE-9, DA-15, DB-25, DC-37
+// 使用ネジ: M3（コネクタ固定用）
+//
+// 参考:
+//   D-Sub形状: dpeart氏のライブラリ (http://forums.reprap.org/read.php?313,577003)
+//   ブラケット寸法: NopSCADlib (https://github.com/nophead/NopSCADlib)
 
 // ===== パラメータ =====
 

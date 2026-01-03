@@ -1,6 +1,18 @@
-// サンプル: multi_connector_panel を天板にした箱
+// D-SUBコネクタ搭載エンクロージャー
+// multi_connector_panel.scad を天板として使用する箱
 //
-// 出力 (OpenSCAD 2024以降 + lazy-union):
+// 外形: 120mm x 110mm x 58mm（箱50mm + 天板8mm）
+// 使用コネクタ:
+//   天板: DE-9 x7, DA-15 x1
+//   前面: DE-9 x3
+// 使用ネジ:
+//   天板固定: M3ヒートセットインサート x4
+//   PCB固定: M2.5ネジ + ナット x4
+// 依存: dsub_panel_mount.scad, mock_pcb.scad, BOSL2, NopSCADlib
+//
+// マルチカラー印刷対応: 箱（白）と文字（黒）が別オブジェクト
+//
+// ビルド (OpenSCAD 2024以降 + lazy-union):
 //   openscad --enable=lazy-union -O export-3mf/material-type=color \
 //     -o enclosure.3mf enclosure_with_panel.scad
 
