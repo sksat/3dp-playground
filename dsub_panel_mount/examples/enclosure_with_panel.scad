@@ -10,7 +10,12 @@ include <BOSL2/std.scad>
 
 // ===== タイトル・ラベル（カスタマイズ用） =====
 front_title = "D-SUB Enclosure v0.1";
-front_labels = ["COM9", "COM10", "COM11"];  // DE-9 x3
+
+// 前面 DE-9 x3
+front_label_1 = "COM9";
+front_label_2 = "COM10";
+front_label_3 = "COM11";
+front_labels = [front_label_1, front_label_2, front_label_3];
 
 // 箱のパラメータ
 box_width = 120;       // パネルと同じ

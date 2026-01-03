@@ -11,9 +11,23 @@ include <BOSL2/std.scad>
 
 // ===== タイトル・ラベル（カスタマイズ用） =====
 panel_title = "D-SUB Panel v0.1";
-top_labels = ["COM1", "COM2", "COM3"];       // 上段 DE-9 x3
-mid_labels = ["COM4", "COM5"];               // 中段 DE-9, DA-15
-bottom_labels = ["COM6", "COM7", "COM8"];    // 下段 DE-9 x3
+
+// 上段 DE-9 x3
+top_label_1 = "COM1";
+top_label_2 = "COM2";
+top_label_3 = "COM3";
+top_labels = [top_label_1, top_label_2, top_label_3];
+
+// 中段 DE-9, DA-15
+mid_label_1 = "COM4";
+mid_label_2 = "COM5";
+mid_labels = [mid_label_1, mid_label_2];
+
+// 下段 DE-9 x3
+bottom_label_1 = "COM6";
+bottom_label_2 = "COM7";
+bottom_label_3 = "COM8";
+bottom_labels = [bottom_label_1, bottom_label_2, bottom_label_3];
 
 // パラメータ (ライブラリと同じ値を設定)
 plate_thickness = 8;
