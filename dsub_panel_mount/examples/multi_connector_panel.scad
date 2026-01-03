@@ -9,8 +9,11 @@
 use <../dsub_panel_mount.scad>
 include <BOSL2/std.scad>
 
-// ===== タイトル =====
+// ===== タイトル・ラベル（カスタマイズ用） =====
 panel_title = "D-SUB Panel v0.1";
+top_labels = ["COM1", "COM2", "COM3"];       // 上段 DE-9 x3
+mid_labels = ["COM4", "COM5"];               // 中段 DE-9, DA-15
+bottom_labels = ["COM6", "COM7", "COM8"];    // 下段 DE-9 x3
 
 // パラメータ (ライブラリと同じ値を設定)
 plate_thickness = 8;
@@ -35,11 +38,6 @@ label_font = "Liberation Sans:style=Bold";
 // タイトル設定
 title_font_size = 5;   // タイトルのフォントサイズ（ラベルと同じ）
 title_margin = 5;      // 端からの余白
-
-// ラベル文字列（各行ごとにカスタマイズ可能）
-top_labels = ["COM1", "COM2", "COM3"];       // 上段 DE-9 x3
-mid_labels = ["COM4", "COM5"];               // 中段 DE-9, DA-15
-bottom_labels = ["COM6", "COM7", "COM8"];    // 下段 DE-9 x3
 
 // パネルサイズ（固定）
 panel_width = 120;   // 横 12cm

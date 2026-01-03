@@ -8,6 +8,10 @@ use <../dsub_panel_mount.scad>
 use <multi_connector_panel.scad>
 include <BOSL2/std.scad>
 
+// ===== タイトル・ラベル（カスタマイズ用） =====
+front_title = "D-SUB Enclosure v0.1";
+front_labels = ["COM9", "COM10", "COM11"];  // DE-9 x3
+
 // 箱のパラメータ
 box_width = 120;       // パネルと同じ
 box_depth = 110;       // パネルと同じ
@@ -49,9 +53,6 @@ label_depth = 1.0;
 label_font = "Liberation Sans:style=Bold";
 label_offset_y = bracket_h/2 + 4;  // コネクタ中心からラベルまでの距離
 
-// 前面パネルのラベル文字列（カスタマイズ可能）
-front_labels = ["COM9", "COM10", "COM11"];  // DE-9 x3
-
 // ===== 前面パネル（独立した板として設計） =====
 // 水平状態で設計し、回転して配置
 // コネクタ中心を原点として設計
@@ -67,6 +68,22 @@ module front_label_cutout_text(txt) {
         offset(delta = 0.05)
             text(txt, size = label_font_size, font = label_font, halign = "center", valign = "center");
 }
+
+// タイトル用テキスト
+module front_title_text(txt) {
+    linear_extrude(height = label_depth)
+        text(txt, size = label_font_size, font = label_font, halign = "left", valign = "top");
+}
+
+module front_title_cutout_text(txt) {
+    linear_extrude(height = label_depth + 0.1)
+        offset(delta = 0.05)
+            text(txt, size = label_font_size, font = label_font, halign = "left", valign = "top");
+}
+
+// タイトル位置（コネクタの左端に揃え、ラベルの上）
+front_title_x = -front_row_width/2;
+front_title_y = label_offset_y + label_font_size * 2 + 2;
 
 // 前面パネル（板 + コネクタ穴 + ラベル凹み）
 // ラベル本体は組み立てセクションで別途追加
@@ -92,6 +109,10 @@ module front_panel() {
             translate([x, label_offset_y, wall_thickness - label_depth])
                 front_label_cutout_text(front_labels[i]);
         }
+
+        // タイトル凹み
+        translate([front_title_x, front_title_y, wall_thickness - label_depth])
+            front_title_cutout_text(front_title);
     }
 }
 
@@ -184,13 +205,19 @@ color("white") difference() {
     }
 }
 
-// 前面パネルのラベル（別色）
+// 前面パネルのラベル・タイトル（別色）
 translate([box_width/2, wall_thickness, front_conn_z])
     rotate([90, 0, 0])
-        color("black") for (i = [0:2]) {
-            x = -front_row_width/2 + db9_w/2 + i * (db9_w + front_h_spacing);
-            translate([x, label_offset_y, wall_thickness - label_depth])
-                front_label_text(front_labels[i]);
+        color("black") {
+            // ラベル
+            for (i = [0:2]) {
+                x = -front_row_width/2 + db9_w/2 + i * (db9_w + front_h_spacing);
+                translate([x, label_offset_y, wall_thickness - label_depth])
+                    front_label_text(front_labels[i]);
+            }
+            // タイトル
+            translate([front_title_x, front_title_y, wall_thickness - label_depth])
+                front_title_text(front_title);
         }
 
 // 天板（multi_connector_panel）- プレビュー用、印刷時は別ファイルで
