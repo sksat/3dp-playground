@@ -236,8 +236,8 @@ translate([box_width/2, wall_thickness, front_conn_z])
 // 天板は別途印刷してネジ留めする設計
 if (show_top_panel) {
     translate([box_width/2, box_depth/2, box_height]) {
-        color("white") main_panel();
-        color("black") labels();
+        enclosure_top_panel();
+        panel_connectors();
     }
 }
 

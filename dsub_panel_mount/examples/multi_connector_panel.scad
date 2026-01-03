@@ -224,12 +224,14 @@ module labels() {
         title_text(panel_title);
 }
 
-// ===== 出力 =====
-color("white") main_panel();
-color("black") labels();
+// ===== パネル本体（板 + ラベル） =====
+module enclosure_top_panel() {
+    color("white") main_panel();
+    color("black") labels();
+}
 
 // ===== フィットチェック用コネクタ =====
-if (show_connectors) {
+module panel_connectors() {
     // 上段: DE-9 x3
     for (i = [0:2]) {
         x = -row_width/2 + db9_w/2 + i * (db9_w + h_spacing);
@@ -250,3 +252,7 @@ if (show_connectors) {
             d_socket(DCONN9);
     }
 }
+
+// ===== 出力 =====
+enclosure_top_panel();
+if (show_connectors) panel_connectors();
