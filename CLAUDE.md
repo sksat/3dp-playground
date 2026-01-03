@@ -278,6 +278,58 @@ difference() {
 - `intersection()` で外形トリミング → 統一された角丸
 - `edges="Z"` で垂直エッジのみ（印刷向け）
 
+### Fit Checking with Component Models (既製品モデルによるフィットチェック)
+
+既製品（コネクタ、ブラケット等）を使う設計では、実際のモデルを配置してフィットを確認する:
+
+**NopSCADlib の利用:**
+
+```bash
+# インストール
+git clone https://github.com/nophead/NopSCADlib.git ~/.local/share/OpenSCAD/libraries/NopSCADlib
+```
+
+```openscad
+include <NopSCADlib/core.scad>
+include <NopSCADlib/vitamins/d_connectors.scad>
+
+// DCONN9, DCONN15, DCONN25, DCONN37 が利用可能
+d_socket(DCONN9);  // メス（パネル取付側）
+d_plug(DCONN9);    // オス（ケーブル側）
+```
+
+**フィットチェック用の配置:**
+
+```openscad
+show_connectors = true;  // フラグで表示切替
+
+// 注意: intersection() や difference() の外に配置
+// 内側に配置すると外形でクリップされる
+if (show_connectors) {
+    translate([...]) rotate([...])
+        d_socket(DCONN9);
+}
+```
+
+**よくある問題:**
+- `intersection()` 内に配置 → 外形でクリップされてコネクタが消える
+- 回転後の向きが想定と違う → パネルローカル座標での Y 軸方向に注意
+
+**画像生成による確認:**
+
+```bash
+# 特定アングルで画像生成
+openscad -o output.png --imgsize=800,600 \
+  -D '$vpr=[70,0,30]; $vpt=[60,55,25]; $vpd=280;' \
+  input.scad
+
+# $vpr: 視点回転 [x,y,z]
+# $vpt: 視点位置 [x,y,z]
+# $vpd: 視点距離
+```
+
+フロントパネルを確認する場合は、カメラを正面寄りに配置する（$vpr の Z 成分を調整）。
+
 ### Screw Fastening Design (ネジ固定の設計)
 
 ネジとナットで部品を固定する際の設計上の考慮点:
