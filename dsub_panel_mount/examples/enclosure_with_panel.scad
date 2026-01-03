@@ -7,6 +7,11 @@
 use <../dsub_panel_mount.scad>
 use <multi_connector_panel.scad>
 include <BOSL2/std.scad>
+include <NopSCADlib/core.scad>
+include <NopSCADlib/vitamins/d_connectors.scad>
+
+// ===== フィットチェック用 =====
+show_connectors = true;  // false にすると非表示
 
 // ===== タイトル・ラベル（カスタマイズ用） =====
 front_title = "D-SUB Enclosure v0.1";
@@ -119,6 +124,7 @@ module front_panel() {
         translate([front_title_x, front_title_y, wall_thickness - label_depth])
             front_title_cutout_text(front_title);
     }
+
 }
 
 // ===== 箱本体（シンプル、ボスなし、角丸） =====
@@ -231,3 +237,16 @@ translate([box_width/2, wall_thickness, front_conn_z])
 //     color("white") main_panel();
 //     color("black") labels();
 // }
+
+// ===== フィットチェック用コネクタ =====
+// 印刷時は show_connectors = false に
+if (show_connectors) {
+    translate([box_width/2, wall_thickness, front_conn_z])
+        rotate([90, 0, 0])
+            for (i = [0:2]) {
+                x = -front_row_width/2 + db9_w/2 + i * (db9_w + front_h_spacing);
+                translate([x, 0, wall_thickness])
+                    d_socket(DCONN9);
+            }
+}
+
