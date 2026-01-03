@@ -36,6 +36,9 @@ label_depth = 1.0;
 label_font = "Liberation Sans:style=Bold";
 label_offset_y = bracket_h/2 + 4;  // コネクタ中心からラベルまでの距離
 
+// 前面パネルのラベル文字列（カスタマイズ可能）
+front_labels = ["COM9", "COM10", "COM11"];  // DE-9 x3
+
 // ===== 前面パネル（独立した板として設計） =====
 // 水平状態で設計し、回転して配置
 // コネクタ中心を原点として設計
@@ -74,7 +77,7 @@ module front_panel() {
         for (i = [0:2]) {
             x = -front_row_width/2 + db9_w/2 + i * (db9_w + front_h_spacing);
             translate([x, label_offset_y, wall_thickness - label_depth])
-                front_label_cutout_text("DE-9");
+                front_label_cutout_text(front_labels[i]);
         }
     }
 }
@@ -138,7 +141,7 @@ translate([box_width/2, wall_thickness, front_conn_z])
         color("black") for (i = [0:2]) {
             x = -front_row_width/2 + db9_w/2 + i * (db9_w + front_h_spacing);
             translate([x, label_offset_y, wall_thickness - label_depth])
-                front_label_text("DE-9");
+                front_label_text(front_labels[i]);
         }
 
 // 天板（multi_connector_panel）- プレビュー用、印刷時は別ファイルで

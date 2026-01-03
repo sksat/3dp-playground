@@ -27,6 +27,11 @@ label_font_size = 5;   // フォントサイズ
 label_depth = 1.0;     // 文字の埋め込み深さ
 label_font = "Liberation Sans:style=Bold";
 
+// ラベル文字列（各行ごとにカスタマイズ可能）
+top_labels = ["COM1", "COM2", "COM3"];       // 上段 DE-9 x3
+mid_labels = ["COM4", "COM5"];               // 中段 DE-9, DA-15
+bottom_labels = ["COM6", "COM7", "COM8"];    // 下段 DE-9 x3
+
 // パネルサイズ（固定）
 panel_width = 120;   // 横 12cm
 panel_height = 110;  // 縦 11cm
@@ -127,20 +132,20 @@ module label_cutouts() {
     for (i = [0:2]) {
         x = -row_width/2 + db9_w/2 + i * (db9_w + h_spacing);
         translate([x, top_y + label_offset_y, z])
-            label_cutout_text("DE-9");
+            label_cutout_text(top_labels[i]);
     }
 
     // 中段
     translate([-row_width/2 + db9_w/2, mid_y + label_offset_y, z])
-        label_cutout_text("DE-9");
+        label_cutout_text(mid_labels[0]);
     translate([row_width/2 - db15_w/2, mid_y + label_offset_y, z])
-        label_cutout_text("DA-15");
+        label_cutout_text(mid_labels[1]);
 
     // 下段
     for (i = [0:2]) {
         x = -row_width/2 + db9_w/2 + i * (db9_w + h_spacing);
         translate([x, bottom_y + label_offset_y, z])
-            label_cutout_text("DE-9");
+            label_cutout_text(bottom_labels[i]);
     }
 }
 
@@ -148,24 +153,24 @@ module label_cutouts() {
 module labels() {
     z = plate_thickness - label_depth;
 
-    // 上段ラベル: DE-9 x3
+    // 上段ラベル
     for (i = [0:2]) {
         x = -row_width/2 + db9_w/2 + i * (db9_w + h_spacing);
         translate([x, top_y + label_offset_y, z])
-            label_text("DE-9");
+            label_text(top_labels[i]);
     }
 
-    // 中段ラベル: DE-9 (左) + DA-15 (右)
+    // 中段ラベル
     translate([-row_width/2 + db9_w/2, mid_y + label_offset_y, z])
-        label_text("DE-9");
+        label_text(mid_labels[0]);
     translate([row_width/2 - db15_w/2, mid_y + label_offset_y, z])
-        label_text("DA-15");
+        label_text(mid_labels[1]);
 
-    // 下段ラベル: DE-9 x3
+    // 下段ラベル
     for (i = [0:2]) {
         x = -row_width/2 + db9_w/2 + i * (db9_w + h_spacing);
         translate([x, bottom_y + label_offset_y, z])
-            label_text("DE-9");
+            label_text(bottom_labels[i]);
     }
 }
 

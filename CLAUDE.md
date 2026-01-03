@@ -199,3 +199,25 @@ openscad --enable=lazy-union -O export-3mf/material-type=color \
 - 各パーツに `color()` を指定
 - インレイ（埋め込み文字等）は凹みを少し大きく作り、Z-fightingを回避
 - STL形式は単一メッシュのみ対応のため、マルチカラーには3MFを使用
+
+### Parameterized Labels (配列によるラベル管理)
+
+複数のラベルを個別にカスタマイズする場合、文字列配列で定義:
+
+```openscad
+// ラベル文字列（カスタマイズ可能）
+top_labels = ["COM1", "COM2", "COM3"];
+mid_labels = ["COM4", "COM5"];
+bottom_labels = ["COM6", "COM7", "COM8"];
+
+// ラベル配置（forループでインデックス参照）
+for (i = [0:2]) {
+    translate([x_positions[i], y, z])
+        label_text(top_labels[i]);
+}
+```
+
+**利点:**
+- ラベル文字列をファイル先頭で一括管理
+- コネクタの用途に応じたラベル付け（"COM1", "VIDEO", "CTRL"など）
+- 配置ロジックとラベル内容を分離
