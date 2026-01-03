@@ -2,15 +2,6 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Build Commands
-
-Generate STL from OpenSCAD files:
-```bash
-openscad -o output.stl input.scad
-```
-
-Makefile にパターンルール (`%.3mf: %.scad` 等) を定義しておくと `make foo.3mf` でビルドできる。
-
 ## Repository Structure
 
 Each library has its own directory containing examples:
@@ -21,6 +12,29 @@ library_name/
 ```
 
 Import with relative paths: `use <../library_name.scad>`
+
+## Build Commands
+
+Generate STL from OpenSCAD files:
+```bash
+openscad -o output.stl input.scad
+```
+
+Makefile にパターンルール (`%.3mf: %.scad` 等) を定義しておくと `make foo.3mf` でビルドできる。
+
+## Multi-Color Printing
+
+OpenSCAD 2024以降 + lazy-union で、`color()` で指定した色ごとに別オブジェクトとして3MF出力可能:
+
+```bash
+openscad --enable=lazy-union -O export-3mf/material-type=color \
+  -o output.3mf input.scad
+```
+
+設計時の注意:
+- 各パーツに `color()` を指定
+- インレイ（埋め込み文字等）は凹みを少し大きく作り、Z-fightingを回避
+- STL形式は単一メッシュのみ対応のため、マルチカラーには3MFを使用
 
 ## Design Philosophy
 
@@ -187,20 +201,6 @@ boss_d = 8;               // ボス直径（穴 + 肉厚）
 
 - 穴は上面から開ける（印刷後にインサートを熱圧入）
 - ボス（柱）で薄い壁にも対応可能
-
-### Multi-Color Printing
-
-OpenSCAD 2024以降 + lazy-union で、`color()` で指定した色ごとに別オブジェクトとして3MF出力可能:
-
-```bash
-openscad --enable=lazy-union -O export-3mf/material-type=color \
-  -o output.3mf input.scad
-```
-
-設計時の注意:
-- 各パーツに `color()` を指定
-- インレイ（埋め込み文字等）は凹みを少し大きく作り、Z-fightingを回避
-- STL形式は単一メッシュのみ対応のため、マルチカラーには3MFを使用
 
 ### Parameterized Labels (配列によるラベル管理)
 
