@@ -9,6 +9,8 @@ Generate STL from OpenSCAD files:
 openscad -o output.stl input.scad
 ```
 
+Makefile にパターンルール (`%.3mf: %.scad` 等) を定義しておくと `make foo.3mf` でビルドできる。
+
 ## Repository Structure
 
 Each library has its own directory containing examples:
