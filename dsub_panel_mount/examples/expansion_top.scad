@@ -22,6 +22,10 @@ include <NopSCADlib/core.scad>
 include <NopSCADlib/vitamins/d_connectors.scad>
 include <NopSCADlib/vitamins/pcbs.scad>
 
+// 天板を include（show_lid_only が定義済みなら出力抑制）
+show_lid_only = true;
+include <expansion_top_lid.scad>
+
 // ===== フィットチェック用 =====
 // 単体で開いた時のデフォルト値
 // include される場合は呼び出し側で show_plugs を定義
@@ -216,15 +220,18 @@ module exp_top_title_cutout_text(txt) {
 
 // ===== 前面タイトル（側壁、別マテリアル用） =====
 // 前面から見た時に読めるように配置
+// rotate([-90,0,0]) で Y→-Z になるため、mirror([0,1,0]) で補正
 module exp_top_front_title_text(txt) {
     linear_extrude(height = label_depth)
-        text(txt, size = label_font_size, font = label_font, halign = "left", valign = "bottom");
+        mirror([0, 1, 0])
+            text(txt, size = label_font_size, font = label_font, halign = "left", valign = "top");
 }
 
 module exp_top_front_title_cutout_text(txt) {
     linear_extrude(height = label_depth + 0.1)
-        offset(delta = 0.05)
-            text(txt, size = label_font_size, font = label_font, halign = "left", valign = "bottom");
+        mirror([0, 1, 0])
+            offset(delta = 0.05)
+                text(txt, size = label_font_size, font = label_font, halign = "left", valign = "top");
 }
 
 // 前面タイトル位置（側壁座標系、左下）
@@ -288,9 +295,10 @@ module exp_top_labels() {
 // ===== 前面タイトル（側壁上のテキスト） =====
 module exp_top_front_title() {
     // 側壁は exp_top_bottom_total から始まる
-    // テキストは外面に配置、凹みにはまる
-    translate([front_title_x, -exp_top_depth/2, exp_top_bottom_total + front_title_z])
-        rotate([90, 0, 0])
+    // 凹みと同じ回転（rotate([-90,0,0])）を使用
+    // テキストは壁表面より 0.01mm 手前から開始（Z-fighting 回避、視認性確保）
+    translate([front_title_x, -exp_top_depth/2 - 0.01, exp_top_bottom_total + front_title_z])
+        rotate([-90, 0, 0])
             exp_top_front_title_text(panel_title);
 }
 
@@ -348,8 +356,9 @@ module expansion_top_walls() {
                    rounding=inner_r, edges="Z", anchor=BOTTOM);
 
         // 前面タイトル凹み（外面から彫り込む）
+        // rotate([-90,0,0]) で +Y 方向（壁内部）へ彫り込む
         translate([front_title_x, -exp_top_depth/2 - 0.1, front_title_z])
-            rotate([90, 0, 0])
+            rotate([-90, 0, 0])
                 exp_top_front_title_cutout_text(panel_title);
 
         // 天板スロット（前面・左右の3辺、背面は開口）
@@ -462,19 +471,6 @@ module expansion_top_pico() {
     }
 }
 
-// ===== 天板（スライド式） =====
-module expansion_top_lid() {
-    // 天板サイズの計算
-    // 左右: 内壁間 + 溝深さ*2 - クリアランス*2
-    lid_width = exp_top_width - (exp_top_wall - lid_slot_depth) * 2 - lid_slot_clearance * 2;
-    // 前後: 前面溝に入り、背面は開口から出る
-    lid_depth = exp_top_depth - (exp_top_wall - lid_slot_depth) - lid_slot_clearance;
-
-    // 背面を開口方向に合わせて配置（Y中心をずらす）
-    translate([0, (exp_top_wall - lid_slot_depth + lid_slot_clearance) / 2, 0])
-        cube([lid_width, lid_depth, lid_thickness], center=true);
-}
-
 // ===== 出力 =====
 // show_expansion_top が未定義 = 単体で開いている → 出力
 // include された場合は呼び出し側で制御
@@ -493,7 +489,9 @@ if (is_undef(show_expansion_top)) {
     if (show_lid) {
         // 天板を装着位置にプレビュー
         lid_z = exp_top_bottom_total + exp_top_internal_h - lid_slot_top_offset - lid_thickness/2;
-        translate([0, 0, lid_z])
+        translate([0, 0, lid_z]) {
             color("lightgray") expansion_top_lid();
+            color("black") expansion_top_lid_label();
+        }
     }
 }
