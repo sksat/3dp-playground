@@ -516,55 +516,87 @@ echo(tolerance);  // 0.3
 - OpenSCAD の座標軸（X, Y, Z）とは独立して考える
 - 必要な変換（mirror、rotate）は見え方から逆算する
 
-### Side-Mounted Text (垂直壁へのテキスト配置)
+### Multi-Color Text and Z-Fighting (マルチカラーテキストと Z-fighting)
 
-垂直壁（前面、側面など）にマルチカラー用のテキストラベルを配置する場合:
+マルチカラー印刷で異なる色のテキストを壁に配置する場合、印刷時の造形方向によって適切なアプローチが異なる。
 
-**rotate() による座標変換の理解:**
-```
-rotate([90, 0, 0]):  +Z → -Y（視聴者に向かって押し出し）
-rotate([-90, 0, 0]): +Z → +Y（壁内部へ押し出し）
-```
+**Z-fighting の原因:**
+壁表面とテキスト表面が同一平面を共有すると、レンダラーがどちらを表示すべきか判断できず「ちらつき」が発生する。
 
-壁内部へ彫り込む凹みには `rotate([-90, 0, 0])` を使用する。
+**印刷時の造形方向による分類:**
 
-**設計手順:**
-1. **押し出し方向を決定**: 壁内部へ → `rotate([-90, 0, 0])`
-2. **テキスト反転を補正**: 回転で Y→-Z となるため `mirror([0, 1, 0])` を追加
-3. **凹みとテキストの位置を分離**: Z-fighting 回避のため 0.01mm オフセット
+| 造形方向 | 例 | テキスト配置 | Z-fighting 対策 |
+|---------|-----|-------------|----------------|
+| 上面 | 底板のラベル（印刷時に上向き） | 0.1mm 突出 OK | くり抜きとテキストを同じ位置・深さに |
+| 側面 | 垂直壁のタイトル（印刷時に垂直） | 壁と同一面必須 | くり抜きとテキストを同じ位置、押出長の差で回避 |
 
-**実装例（前面壁へのタイトル）:**
+**上面テキスト（印刷時に上向き）:**
+
+テキストが印刷時に上を向く場合、0.1mm 程度の突出はサポート不要で造形しやすい。
+
 ```openscad
-// テキストモジュール（rotate([-90,0,0]) 後に正しく読めるよう補正）
-module front_title_text(txt) {
-    linear_extrude(height = label_depth)
-        mirror([0, 1, 0])
-            text(txt, size = font_size, halign = "left", valign = "top");
+// くり抜きとテキストを同じ位置・同じ深さに配置
+// テキストは壁より 0.1mm 突出するが、上面なのでサポート不要
+
+module label_cutout(txt) {
+    linear_extrude(height = label_depth + 0.1)
+        text(txt, ...);
 }
 
-// 凹みカットアウト（壁構造の difference 内で使用）
+// 壁の difference 内
+translate([x, y, -0.1])  // 壁表面より 0.1mm 手前から
+    label_cutout("Label");
+
+// テキスト本体（同じ位置）
+translate([x, y, -0.1])
+    label_cutout("Label");  // 同じモジュールを使用
+```
+
+**側面テキスト（印刷時に垂直壁）:**
+
+テキストが印刷時に垂直壁になる場合、突出はオーバーハングを生むため不可。くり抜きとテキストを**同じ位置**に配置し、押出長の差で Z-fighting を回避する。
+
+```openscad
+// テキストモジュール
+module front_title_text(txt) {
+    linear_extrude(height = label_depth)
+        mirror([0, 1, 0])  // rotate([-90,0,0]) での反転を補正
+            text(txt, ...);
+}
+
+// くり抜き（テキストと同じ形状、奥まで延長）
 module front_title_cutout(txt) {
     linear_extrude(height = label_depth + 0.1)
         mirror([0, 1, 0])
-            offset(delta = 0.05)
-                text(txt, size = font_size, halign = "left", valign = "top");
+            text(txt, ...);  // offset なし（テキストと同じ形状）
 }
 
-// 凹み（壁の difference 内）
-translate([title_x, -wall_y - 0.1, title_z])
+// 壁の difference 内（壁表面より手前から開始）
+translate([x, -wall_y - 0.1, z])
     rotate([-90, 0, 0])
         front_title_cutout("Title");
 
-// テキスト本体（出力セクション、壁より 0.01mm 手前）
-translate([title_x, -wall_y - 0.01, title_z])
+// テキスト本体（くり抜きと同じ位置）
+translate([x, -wall_y - 0.1, z])
     rotate([-90, 0, 0])
         front_title_text("Title");
 ```
 
+**Z-fighting 回避の仕組み:**
+- くり抜き: Y = -0.1 から Y = +label_depth（壁表面を超えて内部まで）
+- テキスト: Y = -0.1 から Y = +label_depth - 0.1（壁表面で終端）
+- 壁表面（Y = 0）では両方が「押出の途中」→ 前面を共有しない → Z-fighting なし
+
+**重要なポイント:**
+- くり抜きとテキストは**同じ位置**から開始する
+- くり抜きは `label_depth + 0.1` で壁内部まで到達
+- テキストは `label_depth` で壁表面に終端（突出しない）
+- くり抜きとテキストは**同じ 2D 形状**にする（offset で大きくしない）
+
 **よくある失敗:**
-- `rotate([90, 0, 0])` を使用 → テキストが壁から飛び出す
-- mirror を忘れる → テキストが上下反転
-- 凹みとテキストが同一面 → Z-fighting でちらつく
+- くり抜きに `offset()` を追加 → テキスト周囲に隙間ができ見栄えが悪い
+- テキストを壁表面に配置し、くり抜きだけ手前に → Z-fighting が発生
+- 側面テキストを突出させる → 印刷時にオーバーハングが発生
 
 ### Design for Reusability (再利用性を考慮した設計)
 

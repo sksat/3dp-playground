@@ -228,10 +228,10 @@ module exp_top_front_title_text(txt) {
 }
 
 module exp_top_front_title_cutout_text(txt) {
+    // テキストと同じサイズでくり抜き（Z-fighting 回避のため手前方向に余分に延ばす）
     linear_extrude(height = label_depth + 0.1)
         mirror([0, 1, 0])
-            offset(delta = 0.05)
-                text(txt, size = label_font_size, font = label_font, halign = "left", valign = "top");
+            text(txt, size = label_font_size, font = label_font, halign = "left", valign = "top");
 }
 
 // 前面タイトル位置（側壁座標系、左下）
@@ -295,9 +295,9 @@ module exp_top_labels() {
 // ===== 前面タイトル（側壁上のテキスト） =====
 module exp_top_front_title() {
     // 側壁は exp_top_bottom_total から始まる
-    // 凹みと同じ回転（rotate([-90,0,0])）を使用
-    // テキストは壁表面より 0.01mm 手前から開始（Z-fighting 回避、視認性確保）
-    translate([front_title_x, -exp_top_depth/2 - 0.01, exp_top_bottom_total + front_title_z])
+    // くり抜きと同じ位置に配置（壁表面より 0.1mm 手前から開始）
+    // くり抜きが先に穴を開けているため、Z-fighting なし
+    translate([front_title_x, -exp_top_depth/2 - 0.1, exp_top_bottom_total + front_title_z])
         rotate([-90, 0, 0])
             exp_top_front_title_text(panel_title);
 }
@@ -357,6 +357,8 @@ module expansion_top_walls() {
 
         // 前面タイトル凹み（外面から彫り込む）
         // rotate([-90,0,0]) で +Y 方向（壁内部）へ彫り込む
+        // テキストと同じ位置から開始、label_depth + 0.1 で壁表面より奥まで掘る
+        // → 壁表面では cutout が「途中」なので Z-fighting しない
         translate([front_title_x, -exp_top_depth/2 - 0.1, front_title_z])
             rotate([-90, 0, 0])
                 exp_top_front_title_cutout_text(panel_title);
