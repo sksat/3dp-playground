@@ -4,6 +4,9 @@
 // 外形: 16mm x 16mm x 18mm (wall 3mm + post 15mm)
 // 使用ネジ: M3 x 20mm
 //
+// ナットポケット: ベース底面から 2.4mm 凹み、上に 0.6mm 残る
+// （ベース厚 3mm >= ナット厚 2.4mm + 最低肉厚 0.6mm なので貫通しない）
+//
 // ビルド:
 //   openscad -o screw_post_test.stl screw_post_test.scad
 

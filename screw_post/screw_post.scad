@@ -96,17 +96,32 @@ module screw_post_hole(size = "M2.5", h = 10, nut_side = "bottom",
                 specs[2];
 
         hex_d = nut_w / cos(30);  // 六角形の外接円直径
+        nut_t = specs[2];  // ナット厚
 
-        // ネジ穴（貫通）
-        translate([0, 0, -0.1])
-            cylinder(h = h + 0.2, d = screw_d, $fn = 24);
+        // ネジ穴（ベース + ポストを貫通）
+        translate([0, 0, -base_thickness - 0.1])
+            cylinder(h = base_thickness + h + 0.2, d = screw_d, $fn = 24);
 
         // ナットポケット
         if (nut_side == "bottom") {
-            // 底面から（ベース板を貫通、最低でもベース厚 + ナット厚を確保）
-            nut_pocket_h = max(base_thickness + nut_h, base_thickness + specs[2]);
-            translate([0, 0, -base_thickness - 0.1])
-                cylinder(h = nut_pocket_h + 0.1, d = hex_d, $fn = 6);
+            // nut_h が正（ポスト内まで必要）→ ポスト内まで掘る
+            // nut_h が負（ベース内で済む）→ ベース内に収める（可能なら貫通しない）
+            min_floor = 0.6;  // ナットポケット上に残す最低肉厚（1層分程度）
+
+            if (nut_h > 0) {
+                // ネジが短い：ポスト内までナットポケットが必要
+                nut_pocket_h = base_thickness + nut_h;
+                translate([0, 0, -base_thickness - 0.1])
+                    cylinder(h = nut_pocket_h + 0.1, d = hex_d, $fn = 6);
+            } else if (base_thickness >= nut_t + min_floor) {
+                // ベースが十分厚い：底面から凹ませて min_floor を残す
+                translate([0, 0, -base_thickness - 0.1])
+                    cylinder(h = base_thickness - min_floor + 0.1, d = hex_d, $fn = 6);
+            } else {
+                // ベースが薄い：貫通させる
+                translate([0, 0, -base_thickness - 0.1])
+                    cylinder(h = base_thickness + 0.1, d = hex_d, $fn = 6);
+            }
         } else if (nut_side == "top") {
             // 上面から
             translate([0, 0, h - nut_h])
