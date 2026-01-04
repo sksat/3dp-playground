@@ -316,6 +316,7 @@ if (show_expansion_top) {
     // 天板の上に直接配置（底板内のポケットにコネクタが収まる）
     translate([box_width/2, box_depth/2, box_height + plate_thickness]) {
         color("white") expansion_top();
+        color("black") exp_top_labels();
         if (show_plugs) expansion_top_plugs();
     }
 }

@@ -26,6 +26,32 @@ include <NopSCADlib/vitamins/d_connectors.scad>
 // include される場合は呼び出し側で show_plugs を定義
 show_plugs = true;
 
+// ===== タイトル・ラベル（カスタマイズ用） =====
+// multi_connector_panel.scad と同じ変数名（共通JSONプリセット用）
+panel_title = "Expansion Top v0.1";
+
+// 上段 DE-9 x3
+top_label_1 = "EXT1";
+top_label_2 = "EXT2";
+top_label_3 = "EXT3";
+top_labels = [top_label_1, top_label_2, top_label_3];
+
+// 中段 DE-9, DA-15
+mid_label_1 = "EXT4";
+mid_label_2 = "EXT5";
+mid_labels = [mid_label_1, mid_label_2];
+
+// 下段 DE-9 x3
+bottom_label_1 = "EXT6";
+bottom_label_2 = "EXT7";
+bottom_label_3 = "EXT8";
+bottom_labels = [bottom_label_1, bottom_label_2, bottom_label_3];
+
+// ===== ラベル設定 =====
+label_font_size = 5;
+label_depth = 1.0;
+label_font = "Liberation Sans:style=Bold";
+
 // ===== ボックスパラメータ =====
 exp_top_width = 120;        // 幅（天板と同じ）
 exp_top_depth = 110;        // 奥行（天板と同じ）
@@ -61,6 +87,13 @@ top_y = row_total_height + v_spacing;
 mid_y = 0;
 bottom_y = -(row_total_height + v_spacing);
 conn_offset_y = -label_height / 2;  // コネクタはラベル分下にオフセット
+label_offset_y = bracket_h / 2 + label_height / 2 - 1;  // コネクタ中心からラベルまで
+
+// タイトル位置（左上、EXT3ブラケット左端に揃える）
+// 底面から見た時（文字が正しく読める向き）でEXT3の上、左端揃え
+// EXT3ブラケット左端 = EXT3中心 + db9_w/2（文字読み方向の左）
+title_x = row_width/2;  // EXT3ブラケットの左端（読み方向）
+title_y = top_y + label_offset_y + label_font_size * 2 + 5;
 
 // ===== 底板構造パラメータ =====
 // 天板と同じ構造だが、内側に盛り上がり
@@ -125,6 +158,93 @@ module exp_top_dsub_cutout(conn, base_z = 0) {
     }
 }
 
+// ===== ラベル（底面、別マテリアル用） =====
+// 底面から見た時に読めるようにX軸でミラー（裏から見ると左右反転するため）
+module exp_top_label_text(txt) {
+    linear_extrude(height = label_depth)
+        mirror([1, 0, 0])
+            text(txt, size = label_font_size, font = label_font, halign = "center", valign = "center");
+}
+
+// 凹み用（少し大きめ）
+module exp_top_label_cutout_text(txt) {
+    translate([0, 0, -0.1])
+        linear_extrude(height = label_depth + 0.1)
+            mirror([1, 0, 0])
+                offset(delta = 0.05)
+                    text(txt, size = label_font_size, font = label_font, halign = "center", valign = "center");
+}
+
+// タイトル
+// halign="left" + mirror で、底面から見た時にタイトル左端がアンカー位置に来る
+module exp_top_title_text(txt) {
+    linear_extrude(height = label_depth)
+        mirror([1, 0, 0])
+            text(txt, size = label_font_size, font = label_font, halign = "left", valign = "top");
+}
+
+module exp_top_title_cutout_text(txt) {
+    translate([0, 0, -0.1])
+        linear_extrude(height = label_depth + 0.1)
+            mirror([1, 0, 0])
+                offset(delta = 0.05)
+                    text(txt, size = label_font_size, font = label_font, halign = "left", valign = "top");
+}
+
+// ラベル用凹み（底板から引く）
+module exp_top_label_cutouts() {
+    // 上段
+    for (i = [0:2]) {
+        x = -row_width/2 + db9_w/2 + i * (db9_w + h_spacing);
+        translate([x, top_y + label_offset_y, 0])
+            exp_top_label_cutout_text(top_labels[i]);
+    }
+
+    // 中段
+    translate([-row_width/2 + db9_w/2, mid_y + label_offset_y, 0])
+        exp_top_label_cutout_text(mid_labels[0]);
+    translate([row_width/2 - db15_w/2, mid_y + label_offset_y, 0])
+        exp_top_label_cutout_text(mid_labels[1]);
+
+    // 下段
+    for (i = [0:2]) {
+        x = -row_width/2 + db9_w/2 + i * (db9_w + h_spacing);
+        translate([x, bottom_y + label_offset_y, 0])
+            exp_top_label_cutout_text(bottom_labels[i]);
+    }
+
+    // タイトル
+    translate([title_x, title_y, 0])
+        exp_top_title_cutout_text(panel_title);
+}
+
+// ラベル本体（凹みにはまる）
+module exp_top_labels() {
+    // 上段ラベル
+    for (i = [0:2]) {
+        x = -row_width/2 + db9_w/2 + i * (db9_w + h_spacing);
+        translate([x, top_y + label_offset_y, 0])
+            exp_top_label_text(top_labels[i]);
+    }
+
+    // 中段ラベル
+    translate([-row_width/2 + db9_w/2, mid_y + label_offset_y, 0])
+        exp_top_label_text(mid_labels[0]);
+    translate([row_width/2 - db15_w/2, mid_y + label_offset_y, 0])
+        exp_top_label_text(mid_labels[1]);
+
+    // 下段ラベル
+    for (i = [0:2]) {
+        x = -row_width/2 + db9_w/2 + i * (db9_w + h_spacing);
+        translate([x, bottom_y + label_offset_y, 0])
+            exp_top_label_text(bottom_labels[i]);
+    }
+
+    // タイトル
+    translate([title_x, title_y, 0])
+        exp_top_title_text(panel_title);
+}
+
 // ===== 底板 =====
 module expansion_top_bottom() {
     inner_r = max(exp_top_corner_r - exp_top_wall, 0);
@@ -154,6 +274,9 @@ module expansion_top_bottom() {
             translate([x, bottom_y + conn_offset_y, 0])
                 exp_top_dsub_cutout("db9", base_z = exp_top_pocket);
         }
+
+        // ラベル凹み（底面）
+        exp_top_label_cutouts();
     }
 }
 
@@ -222,6 +345,7 @@ module expansion_top_plugs() {
 // include された場合は呼び出し側で制御
 if (is_undef(show_expansion_top)) {
     color("white") expansion_top();
+    color("black") exp_top_labels();
     if (show_plugs) {
         expansion_top_plugs();
     }
