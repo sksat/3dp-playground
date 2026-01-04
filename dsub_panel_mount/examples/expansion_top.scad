@@ -20,11 +20,13 @@ use <../dsub_panel_mount.scad>
 include <BOSL2/std.scad>
 include <NopSCADlib/core.scad>
 include <NopSCADlib/vitamins/d_connectors.scad>
+include <NopSCADlib/vitamins/pcbs.scad>
 
 // ===== フィットチェック用 =====
 // 単体で開いた時のデフォルト値
 // include される場合は呼び出し側で show_plugs を定義
 show_plugs = true;
+show_pico = true;          // Raspberry Pi Pico プレビュー
 
 // ===== タイトル・ラベル（カスタマイズ用） =====
 // multi_connector_panel.scad と同じ変数名（共通JSONプリセット用）
@@ -67,6 +69,11 @@ beam_y = -3;                // 梁のY位置（コネクタ中心に合わせる
 beam_z_offset = 15;         // 側壁底面からのオフセット
 beam_support_depth = 50;    // 三角サポートの奥行（壁からの距離、緩やかな傾斜）
 beam_support_start_z = 8;   // サポート開始高さ（コネクタ構造との干渉回避）
+
+// Pico 配置パラメータ
+pico_count = 6;             // Pico の個数
+pico_spacing = 19;          // Pico 間隔（X方向）
+pico_y = beam_y;            // Pico の Y 位置（梁と同じ）
 
 // 底板パラメータ（天板と同じ構造）
 exp_top_plate = 8;          // パネル構造厚（天板と同じ plate_thickness）
@@ -372,6 +379,26 @@ module expansion_top_plugs() {
     }
 }
 
+// ===== フィットチェック用 Raspberry Pi Pico =====
+module expansion_top_pico() {
+    // 梁上面の Z 位置
+    beam_top_z = exp_top_bottom_total + beam_z_offset + beam_thickness;
+
+    // Pico サイズ: 51mm x 21mm x 1.6mm
+    // 変換後: 21mm(X) x 1.6mm(Y) x 51mm(Z)、USB が Y- 方向（手前）
+    pico_length = 51;  // 元の長さ
+    pico_width = 21;   // 元の幅、回転後は Z 方向になる
+    pico_row_width = (pico_count - 1) * pico_spacing;
+
+    for (i = [0:pico_count-1]) {
+        x = -pico_row_width/2 + i * pico_spacing;
+        // pcb() は中心基準、回転後は幅(21mm)の半分だけ上げて梁上面に底が来るようにする
+        translate([x, pico_y, beam_top_z + pico_width/2])
+            rotate([-90, 0, -90])  // USB を手前（Y-）に向け、ロール 90°
+                pcb(RPI_Pico);
+    }
+}
+
 // ===== 出力 =====
 // show_expansion_top が未定義 = 単体で開いている → 出力
 // include された場合は呼び出し側で制御
@@ -380,5 +407,8 @@ if (is_undef(show_expansion_top)) {
     color("black") exp_top_labels();
     if (show_plugs) {
         expansion_top_plugs();
+    }
+    if (show_pico) {
+        expansion_top_pico();
     }
 }
