@@ -207,6 +207,23 @@ module exp_top_title_cutout_text(txt) {
                     text(txt, size = label_font_size, font = label_font, halign = "left", valign = "top");
 }
 
+// ===== 前面タイトル（側壁、別マテリアル用） =====
+// 前面から見た時に読めるように配置
+module exp_top_front_title_text(txt) {
+    linear_extrude(height = label_depth)
+        text(txt, size = label_font_size, font = label_font, halign = "left", valign = "bottom");
+}
+
+module exp_top_front_title_cutout_text(txt) {
+    linear_extrude(height = label_depth + 0.1)
+        offset(delta = 0.05)
+            text(txt, size = label_font_size, font = label_font, halign = "left", valign = "bottom");
+}
+
+// 前面タイトル位置（側壁座標系、左下）
+front_title_x = -exp_top_width/2 + 10;  // 左端から余白
+front_title_z = 0;                       // 下端がベース上端（側壁開始位置）
+
 // ラベル用凹み（底板から引く）
 module exp_top_label_cutouts() {
     // 上段
@@ -261,6 +278,15 @@ module exp_top_labels() {
         exp_top_title_text(panel_title);
 }
 
+// ===== 前面タイトル（側壁上のテキスト） =====
+module exp_top_front_title() {
+    // 側壁は exp_top_bottom_total から始まる
+    // テキストは外面に配置、凹みにはまる
+    translate([front_title_x, -exp_top_depth/2, exp_top_bottom_total + front_title_z])
+        rotate([90, 0, 0])
+            exp_top_front_title_text(panel_title);
+}
+
 // ===== 底板 =====
 module expansion_top_bottom() {
     inner_r = max(exp_top_corner_r - exp_top_wall, 0);
@@ -313,6 +339,11 @@ module expansion_top_walls() {
                     exp_top_depth - exp_top_wall * 2,
                     exp_top_internal_h + 0.2],
                    rounding=inner_r, edges="Z", anchor=BOTTOM);
+
+        // 前面タイトル凹み（外面から彫り込む）
+        translate([front_title_x, -exp_top_depth/2 - 0.1, front_title_z])
+            rotate([90, 0, 0])
+                exp_top_front_title_cutout_text(panel_title);
     }
 
     // 梁（側壁の後に追加、内壁に接続）
@@ -404,7 +435,10 @@ module expansion_top_pico() {
 // include された場合は呼び出し側で制御
 if (is_undef(show_expansion_top)) {
     color("white") expansion_top();
-    color("black") exp_top_labels();
+    color("black") {
+        exp_top_labels();
+        exp_top_front_title();
+    }
     if (show_plugs) {
         expansion_top_plugs();
     }
