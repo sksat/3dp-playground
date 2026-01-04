@@ -447,6 +447,56 @@ if (show_top_panel) {
 - OpenSCAD の座標軸（X, Y, Z）とは独立して考える
 - 必要な変換（mirror、rotate）は見え方から逆算する
 
+### Side-Mounted Text (垂直壁へのテキスト配置)
+
+垂直壁（前面、側面など）にマルチカラー用のテキストラベルを配置する場合:
+
+**rotate() による座標変換の理解:**
+```
+rotate([90, 0, 0]):  +Z → -Y（視聴者に向かって押し出し）
+rotate([-90, 0, 0]): +Z → +Y（壁内部へ押し出し）
+```
+
+壁内部へ彫り込む凹みには `rotate([-90, 0, 0])` を使用する。
+
+**設計手順:**
+1. **押し出し方向を決定**: 壁内部へ → `rotate([-90, 0, 0])`
+2. **テキスト反転を補正**: 回転で Y→-Z となるため `mirror([0, 1, 0])` を追加
+3. **凹みとテキストの位置を分離**: Z-fighting 回避のため 0.01mm オフセット
+
+**実装例（前面壁へのタイトル）:**
+```openscad
+// テキストモジュール（rotate([-90,0,0]) 後に正しく読めるよう補正）
+module front_title_text(txt) {
+    linear_extrude(height = label_depth)
+        mirror([0, 1, 0])
+            text(txt, size = font_size, halign = "left", valign = "top");
+}
+
+// 凹みカットアウト（壁構造の difference 内で使用）
+module front_title_cutout(txt) {
+    linear_extrude(height = label_depth + 0.1)
+        mirror([0, 1, 0])
+            offset(delta = 0.05)
+                text(txt, size = font_size, halign = "left", valign = "top");
+}
+
+// 凹み（壁の difference 内）
+translate([title_x, -wall_y - 0.1, title_z])
+    rotate([-90, 0, 0])
+        front_title_cutout("Title");
+
+// テキスト本体（出力セクション、壁より 0.01mm 手前）
+translate([title_x, -wall_y - 0.01, title_z])
+    rotate([-90, 0, 0])
+        front_title_text("Title");
+```
+
+**よくある失敗:**
+- `rotate([90, 0, 0])` を使用 → テキストが壁から飛び出す
+- mirror を忘れる → テキストが上下反転
+- 凹みとテキストが同一面 → Z-fighting でちらつく
+
 ### Design for Reusability (再利用性を考慮した設計)
 
 複数ファイルで共通の設定を使いたい場合（Customizer プリセット共有など）:
