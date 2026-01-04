@@ -59,6 +59,15 @@ exp_top_internal_h = 40;    // 内部高さ
 exp_top_wall = 3;           // 壁厚
 exp_top_corner_r = 3;       // 角丸半径
 
+// 梁パラメータ（基板固定用）
+beam_enabled = true;        // 梁の有効/無効
+beam_width = 65;            // 梁の幅（Y方向、全コネクタを覆う）
+beam_thickness = 5;         // 梁の厚さ（Z方向）
+beam_y = -3;                // 梁のY位置（コネクタ中心に合わせる）
+beam_z_offset = 15;         // 側壁底面からのオフセット
+beam_support_depth = 50;    // 三角サポートの奥行（壁からの距離、緩やかな傾斜）
+beam_support_start_z = 8;   // サポート開始高さ（コネクタ構造との干渉回避）
+
 // 底板パラメータ（天板と同じ構造）
 exp_top_plate = 8;          // パネル構造厚（天板と同じ plate_thickness）
 
@@ -283,7 +292,9 @@ module expansion_top_bottom() {
 // ===== 側壁（オープントップ） =====
 module expansion_top_walls() {
     inner_r = max(exp_top_corner_r - exp_top_wall, 0);
+    beam_length = exp_top_width - exp_top_wall * 2;  // 内壁間の長さ
 
+    // 側壁
     difference() {
         // 外形
         cuboid([exp_top_width, exp_top_depth, exp_top_internal_h],
@@ -295,6 +306,27 @@ module expansion_top_walls() {
                     exp_top_depth - exp_top_wall * 2,
                     exp_top_internal_h + 0.2],
                    rounding=inner_r, edges="Z", anchor=BOTTOM);
+    }
+
+    // 梁（側壁の後に追加、内壁に接続）
+    if (beam_enabled) {
+        // 梁本体
+        translate([0, beam_y, beam_z_offset + beam_thickness/2])
+            cube([beam_length, beam_width, beam_thickness], center=true);
+
+        // 三角サポート（壁から梁へ斜めに成長、印刷用）
+        // 左右の壁から中央方向へ、コネクタ構造より上から開始
+        inner_wall_x = exp_top_width/2 - exp_top_wall;  // 内壁のX位置
+        for (side = [-1, 1]) {
+            translate([side * inner_wall_x, beam_y, 0])
+                rotate([90, 0, 0])
+                    linear_extrude(height = beam_width, center = true)
+                        polygon([
+                            [0, beam_support_start_z],                 // 壁から少し上（干渉回避）
+                            [0, beam_z_offset + beam_thickness],       // 壁の上（梁上面）
+                            [-side * beam_support_depth, beam_z_offset] // 梁の底（中央方向）
+                        ]);
+        }
     }
 }
 
