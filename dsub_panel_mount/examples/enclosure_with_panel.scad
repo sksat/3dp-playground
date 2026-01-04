@@ -26,14 +26,19 @@ include <NopSCADlib/vitamins/d_connectors.scad>
 include <NopSCADlib/vitamins/nuts.scad>
 
 // ===== フィットチェック用 =====
-show_top_panel = true;   // 天板プレビュー
-show_pcb = true;         // 模擬基板
+show_top_panel = true;      // 天板プレビュー
+show_pcb = true;            // 模擬基板
+show_expansion_top = false; // 拡張トップ プレビュー
 
 // 天板を include（show_top_panel が定義済みなら出力抑制）
 include <multi_connector_panel.scad>
 
+// 拡張トップを include（show_expansion_top が定義済みなら出力抑制）
+include <expansion_top.scad>
+
 // Customizer 用に include 後に再定義
 show_connectors = true;  // false にすると非表示
+show_plugs = true;       // false にすると拡張トップのプラグ非表示
 
 // ===== タイトル・ラベル（カスタマイズ用） =====
 front_title = "D-SUB Enclosure v0.1";
@@ -303,5 +308,15 @@ if (show_pcb) {
     translate([box_width/2, box_depth/2, wall_thickness + pcb_post_h])
         mock_pcb(width=pcb_board_width, depth=pcb_board_depth,
                  hole_x=pcb_hole_x, hole_y=pcb_hole_y);
+}
+
+// ===== フィットチェック用 拡張トップ =====
+// 印刷時は show_expansion_top = false に
+if (show_expansion_top) {
+    // 天板の上に直接配置（底板内のポケットにコネクタが収まる）
+    translate([box_width/2, box_depth/2, box_height + plate_thickness]) {
+        color("white") expansion_top();
+        if (show_plugs) expansion_top_plugs();
+    }
 }
 
