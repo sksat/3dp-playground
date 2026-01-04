@@ -14,8 +14,9 @@
 
 // ===== パラメータ =====
 
-// 3Dプリント公差
-tolerance = 0.3;  // 開口部の余裕
+// 3Dプリント公差（デフォルト値、モジュールで上書き可能）
+default_tolerance = 0.3;  // 開口部の余裕（水平面向け）
+// 垂直面（前面パネル等）では 0.4〜0.5 推奨
 
 // 板設定
 plate_thickness = 8;          // 板の厚さ (M3x8ネジ対応)
@@ -260,18 +261,20 @@ module multi_dsub_panel_rows(rows, h_spacing = 5, v_spacing = 5) {
 
 // 単一コネクタの切り欠き (difference用)
 // 任意の板に対して使用可能
-module dsub_cutout(conn_type) {
+// tol: 公差（省略時はデフォルト値、垂直面では 0.4〜0.5 推奨）
+module dsub_cutout(conn_type, tol = undef) {
+    t = is_undef(tol) ? default_tolerance : tol;
     bracket = db_bracket_table(conn_type);
     bracket_w = bracket[0];
     bracket_h = bracket[1];
 
     // フランジ用ザグリ (上面)
     translate([0, 0, plate_thickness - flange_recess_depth])
-        dsub_flange_recess(bracket_w + tolerance, bracket_h + tolerance, flange_corner_r, flange_recess_depth + 0.1);
+        dsub_flange_recess(bracket_w + t, bracket_h + t, flange_corner_r, flange_recess_depth + 0.1);
 
     // D-Sub開口部 (貫通)
     translate([0, 0, -0.1])
-        dsub_opening(conn_type, tolerance, plate_thickness + 0.2);
+        dsub_opening(conn_type, t, plate_thickness + 0.2);
 
     // M3ナット凹み (裏面)
     translate([0, 0, -0.1])
@@ -279,23 +282,23 @@ module dsub_cutout(conn_type) {
 }
 
 // DE-9 (9pin) 専用
-module de9_cutout() {
-    dsub_cutout("db9");
+module de9_cutout(tol = undef) {
+    dsub_cutout("db9", tol);
 }
 
 // DA-15 (15pin) 専用
-module da15_cutout() {
-    dsub_cutout("db15");
+module da15_cutout(tol = undef) {
+    dsub_cutout("db15", tol);
 }
 
 // DB-25 (25pin) 専用
-module db25_cutout() {
-    dsub_cutout("db25");
+module db25_cutout(tol = undef) {
+    dsub_cutout("db25", tol);
 }
 
 // DC-37 (37pin) 専用
-module dc37_cutout() {
-    dsub_cutout("db37");
+module dc37_cutout(tol = undef) {
+    dsub_cutout("db37", tol);
 }
 
 // ===== カスタムレイアウト用パネル =====

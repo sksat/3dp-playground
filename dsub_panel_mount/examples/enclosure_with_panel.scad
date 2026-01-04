@@ -86,6 +86,7 @@ bracket_h = 12.55;
 front_h_spacing = 5;
 front_conn_z = 35;     // コネクタの高さ位置（上寄り）
 front_row_width = db9_w * 3 + front_h_spacing * 2;
+front_tolerance = 0.5; // 垂直面は層積みでオーバーハングが膨らむため大きめ
 
 // ラベル設定
 label_font_size = 5;
@@ -136,11 +137,11 @@ module front_panel() {
         translate([-front_panel_width/2, -front_conn_z + wall_thickness, 0])
             cube([front_panel_width, front_panel_height, wall_thickness]);
 
-        // コネクタカットアウト
+        // コネクタカットアウト（垂直面なので大きめの tolerance）
         for (i = [0:2]) {
             x = -front_row_width/2 + db9_w/2 + i * (db9_w + front_h_spacing);
             translate([x, 0, 0])
-                de9_cutout();
+                de9_cutout(tol = front_tolerance);
         }
 
         // ラベル凹み
