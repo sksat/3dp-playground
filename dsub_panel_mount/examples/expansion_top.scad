@@ -27,6 +27,7 @@ include <NopSCADlib/vitamins/pcbs.scad>
 // include される場合は呼び出し側で show_plugs を定義
 show_plugs = true;
 show_pico = true;          // Raspberry Pi Pico プレビュー
+show_lid = true;           // 天板プレビュー
 
 // ===== タイトル・ラベル（カスタマイズ用） =====
 // multi_connector_panel.scad と同じ変数名（共通JSONプリセット用）
@@ -74,6 +75,12 @@ beam_support_start_z = 8;   // サポート開始高さ（コネクタ構造と�
 pico_count = 5;             // Pico の個数
 pico_spacing = 23;          // Pico 間隔（X方向、21mm幅 + 2mm隙間）
 pico_y = beam_y;            // Pico の Y 位置（梁と同じ）
+
+// 天板スロットパラメータ（後方からスライドして差し込む）
+lid_thickness = 3;          // 天板の厚さ（PLA強度確保）
+lid_slot_depth = 2;         // 溝の深さ（壁への食い込み量）
+lid_slot_clearance = 0.3;   // スライド用クリアランス
+lid_slot_top_offset = 2;    // 壁上端から溝上端までの距離
 
 // 底板パラメータ（天板と同じ構造）
 exp_top_plate = 8;          // パネル構造厚（天板と同じ plate_thickness）
@@ -344,6 +351,30 @@ module expansion_top_walls() {
         translate([front_title_x, -exp_top_depth/2 - 0.1, front_title_z])
             rotate([90, 0, 0])
                 exp_top_front_title_cutout_text(panel_title);
+
+        // 天板スロット（前面・左右の3辺、背面は開口）
+        slot_z = exp_top_internal_h - lid_slot_top_offset - lid_thickness;
+        slot_height = lid_thickness + lid_slot_clearance;
+
+        // 前面の溝
+        translate([0, -exp_top_depth/2 + exp_top_wall - lid_slot_depth/2, slot_z + slot_height/2])
+            cube([exp_top_width - exp_top_wall * 2 + lid_slot_depth * 2,
+                  lid_slot_depth + 0.1,
+                  slot_height], center=true);
+
+        // 左右の溝
+        for (side = [-1, 1]) {
+            translate([side * (exp_top_width/2 - exp_top_wall + lid_slot_depth/2), 0, slot_z + slot_height/2])
+                cube([lid_slot_depth + 0.1,
+                      exp_top_depth - exp_top_wall * 2,
+                      slot_height], center=true);
+        }
+
+        // 背面開口（天板スライド入口）
+        translate([0, exp_top_depth/2 - exp_top_wall/2, slot_z + slot_height/2])
+            cube([exp_top_width - exp_top_wall * 2 + lid_slot_depth * 2,
+                  exp_top_wall + 0.2,
+                  slot_height], center=true);
     }
 
     // 梁（側壁の後に追加、内壁に接続）
@@ -431,6 +462,19 @@ module expansion_top_pico() {
     }
 }
 
+// ===== 天板（スライド式） =====
+module expansion_top_lid() {
+    // 天板サイズの計算
+    // 左右: 内壁間 + 溝深さ*2 - クリアランス*2
+    lid_width = exp_top_width - (exp_top_wall - lid_slot_depth) * 2 - lid_slot_clearance * 2;
+    // 前後: 前面溝に入り、背面は開口から出る
+    lid_depth = exp_top_depth - (exp_top_wall - lid_slot_depth) - lid_slot_clearance;
+
+    // 背面を開口方向に合わせて配置（Y中心をずらす）
+    translate([0, (exp_top_wall - lid_slot_depth + lid_slot_clearance) / 2, 0])
+        cube([lid_width, lid_depth, lid_thickness], center=true);
+}
+
 // ===== 出力 =====
 // show_expansion_top が未定義 = 単体で開いている → 出力
 // include された場合は呼び出し側で制御
@@ -445,5 +489,11 @@ if (is_undef(show_expansion_top)) {
     }
     if (show_pico) {
         expansion_top_pico();
+    }
+    if (show_lid) {
+        // 天板を装着位置にプレビュー
+        lid_z = exp_top_bottom_total + exp_top_internal_h - lid_slot_top_offset - lid_thickness/2;
+        translate([0, 0, lid_z])
+            color("lightgray") expansion_top_lid();
     }
 }
