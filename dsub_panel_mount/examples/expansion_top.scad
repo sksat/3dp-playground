@@ -57,7 +57,7 @@ label_font = "Liberation Sans:style=Bold";
 // ===== ボックスパラメータ =====
 exp_top_width = 120;        // 幅（天板と同じ）
 exp_top_depth = 110;        // 奥行（天板と同じ）
-exp_top_internal_h = 40;    // 内部高さ
+exp_top_internal_h = 45;    // 内部高さ
 exp_top_wall = 3;           // 壁厚
 exp_top_corner_r = 3;       // 角丸半径
 
@@ -71,8 +71,8 @@ beam_support_depth = 50;    // 三角サポートの奥行（壁からの距離�
 beam_support_start_z = 8;   // サポート開始高さ（コネクタ構造との干渉回避）
 
 // Pico 配置パラメータ
-pico_count = 6;             // Pico の個数
-pico_spacing = 19;          // Pico 間隔（X方向）
+pico_count = 5;             // Pico の個数
+pico_spacing = 23;          // Pico 間隔（X方向、21mm幅 + 2mm隙間）
 pico_y = beam_y;            // Pico の Y 位置（梁と同じ）
 
 // 底板パラメータ（天板と同じ構造）
@@ -416,16 +416,17 @@ module expansion_top_pico() {
     beam_top_z = exp_top_bottom_total + beam_z_offset + beam_thickness;
 
     // Pico サイズ: 51mm x 21mm x 1.6mm
-    // 変換後: 21mm(X) x 1.6mm(Y) x 51mm(Z)、USB が Y- 方向（手前）
-    pico_length = 51;  // 元の長さ
-    pico_width = 21;   // 元の幅、回転後は Z 方向になる
+    // 変換後: 21mm(X) x 51mm(Y) x 1.6mm(Z)、USB が Y- 方向（手前）、水平配置
+    pico_length = 51;  // 元の長さ、回転後は Y 方向
+    pico_width = 21;   // 元の幅、回転後は X 方向
+    pico_thickness = 1.6;  // 厚さ、回転後は Z 方向
     pico_row_width = (pico_count - 1) * pico_spacing;
 
     for (i = [0:pico_count-1]) {
         x = -pico_row_width/2 + i * pico_spacing;
-        // pcb() は中心基準、回転後は幅(21mm)の半分だけ上げて梁上面に底が来るようにする
-        translate([x, pico_y, beam_top_z + pico_width/2])
-            rotate([-90, 0, -90])  // USB を手前（Y-）に向け、ロール 90°
+        // pcb() は中心基準、回転後は厚さ(1.6mm)の半分だけ上げて梁上面に底が来るようにする
+        translate([x, pico_y, beam_top_z + pico_thickness/2])
+            rotate([0, 0, 90])  // USB を手前（Y-）に向ける、水平配置
                 pcb(RPI_Pico);
     }
 }
