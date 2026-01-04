@@ -11,6 +11,32 @@
 // 参考:
 //   D-Sub形状: dpeart氏のライブラリ (http://forums.reprap.org/read.php?313,577003)
 //   ブラケット寸法: NopSCADlib (https://github.com/nophead/NopSCADlib)
+//
+// ===== Y方向パネルでの使用 =====
+// このライブラリはZ方向に押し出す設計。Y方向パネル（Y=0面）に使う場合:
+//
+// 1. 回転方向:
+//    rotate([-90, 0, 0])  // Z+ → +Y（パネル内部へ）
+//    rotate([90, 0, 0])   // Z+ → -Y（パネル外部へ）
+//
+// 2. D形状の向き補正:
+//    rotate([-90,0,0]) だとD形状が上下逆になる場合がある。
+//    追加で rotate([0, 0, 180]) を適用して補正:
+//      rotate([-90, 0, 0]) rotate([0, 0, 180]) dsub_opening(...);
+//
+// 3. ナットポケットの注意:
+//    dsub_nut_recesses は内部で回転角度を計算しているため、
+//    外部で rotate([0,0,180]) を適用すると計算が狂う。
+//    代わりに hex_nut_recess を直接使用:
+//      translate([-b, depth, 0]) rotate([90, 0, 0])
+//          hex_nut_recess(m3_nut_width + tolerance, m3_nut_depth, -20);
+//      translate([b, depth, 0]) rotate([90, 0, 0])
+//          hex_nut_recess(m3_nut_width + tolerance, m3_nut_depth, 20);
+//
+// 4. フィットチェック用プラグの回転:
+//    カットアウトのD形状を rotate([0,0,180]) で反転した場合、
+//    NopSCADlib の d_plug() も回転を合わせる必要がある。
+//    例: rotate([90, 0, 180]) → rotate([90, 0, 0]) に変更
 
 // ===== パラメータ =====
 

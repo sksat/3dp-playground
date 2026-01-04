@@ -487,6 +487,21 @@ if (show_top_panel) {
 - `is_undef(変数)` で include 元からの呼び出しを検出
 - 共有したい変数は include 前後で同じ名前を使う
 
+**ライブラリ変数へのアクセス:**
+
+`use` ではモジュールと関数のみ取り込まれ、変数は取り込まれない。
+ライブラリ内の変数（`tolerance`, `m3_nut_width` 等）を使いたい場合は `include` を使用:
+
+```openscad
+// use では変数にアクセスできない
+use <../dsub_panel_mount.scad>
+echo(tolerance);  // undefined
+
+// include なら変数も使える
+include <../dsub_panel_mount.scad>
+echo(tolerance);  // 0.3
+```
+
 ### Viewing Direction Design (視線方向を考慮した設計)
 
 通常と異なる方向から見る面（底面、内側など）に形状を配置する場合:
