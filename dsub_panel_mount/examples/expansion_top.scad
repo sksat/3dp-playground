@@ -14,6 +14,7 @@
 //
 // ビルド:
 //   openscad --enable=lazy-union -O export-3mf/material-type=color \
+//     -D 'show_plugs=false' -D 'show_pico=false' -D 'show_lid=false' \
 //     -o expansion_top.3mf expansion_top.scad
 
 use <../dsub_panel_mount.scad>
