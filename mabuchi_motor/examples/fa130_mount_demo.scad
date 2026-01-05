@@ -67,8 +67,9 @@ mount_hole_inset = 4;  // 端からの距離
 
 // マウント配置（横向き: シャフトが -Y 方向、モーターは +Y から挿入）
 // rotate([180, 0, 90]) で端子側を上、シャフトを Y 方向に
+// マウント位置（中央配置）
 mount_x = base_w / 2;
-mount_y = 2;  // カップラーを板の端に寄せる
+mount_y = 0;  // シャフト側をベース前端（Y=0）に揃える
 mount_z = base_h + mount_outer_h / 2;
 
 // ベースプレート
@@ -112,12 +113,12 @@ if (show_motor) {
 // カップラー
 if (show_coupler) {
     // show_mount=true: 組み立て位置（シャフト先端）、false: 印刷用（Z=0）
-    // シャフトは -Y 方向に突出（mount_y がシャフト穴位置）
-    shaft_tip_y = mount_y - fa130_shaft_protrusion - fa130_bearing_holder_len;
+    // シャフトは -Y 方向に突出（マウントのシャフト側が Y=0 にあり、そこから -Y へ）
+    shaft_tip_y = mount_y - (fa130_shaft_protrusion + fa130_bearing_holder_len);
 
     color("orange")
     if (show_mount) {
-        translate([mount_x, shaft_tip_y + coupler_length, mount_z])
+        translate([mount_x, shaft_tip_y, mount_z])
             rotate([90, 0, 0])
                 fa130_shaft_coupler(outer_d = coupler_outer_d, length = coupler_length,
                                     with_slit = coupler_with_slit);
