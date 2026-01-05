@@ -743,6 +743,86 @@ translate([0, 0, shaft_bottom_z])
 - echo() で計算結果を出力して検証
 - 全体寸法が公称値と一致するか確認
 
+### Incremental Model Construction (インクリメンタルなモデル構築)
+
+複雑なモデルを一度に完成させようとすると、位置や向きの問題が積み重なり修正が困難になる。
+
+**推奨アプローチ:**
+1. 最も基本的な部品から始める（例: 本体の円柱）
+2. 一つ部品を追加するごとにレンダリングして確認
+3. 問題があればその場で修正
+4. 次の部品に進む
+
+```openscad
+// ステップ1: 基本形状
+cylinder(h = 5.2, d = 20.1);
+
+// ステップ2: D形状にする（上下を削る）
+difference() {
+    cylinder(...);
+    translate(...) cube(...);  // 上を削る
+    translate(...) cube(...);  // 下を削る
+}
+
+// ステップ3: 次の部品を追加
+// ...
+```
+
+**利点:**
+- 問題の原因が明確（直前の変更が原因）
+- 回転方向や位置のミスを早期発見
+- 最終的なコードも段階的で理解しやすい
+
+### Cylinder Rotation for X-Axis Extrusion (X軸方向への円柱伸長)
+
+`cylinder()` はデフォルトで Z 軸方向に伸びる。X 軸方向に伸ばすには Y 軸周りに回転:
+
+```openscad
+// +X 方向に伸ばす（Z+ → X+）
+rotate([0, 90, 0])
+    cylinder(h = length, d = diameter);
+
+// -X 方向に伸ばす（Z+ → X-）
+rotate([0, -90, 0])
+    cylinder(h = length, d = diameter);
+```
+
+**回転の仕組み:**
+- `rotate([0, 90, 0])`: Y軸周りに+90°回転 → Z+ が X+ になる
+- `rotate([0, -90, 0])`: Y軸周りに-90°回転 → Z+ が X- になる
+
+**よくある間違い:**
+- 符号を間違えると部品が逆方向に伸びる
+- `linear_extrude` も同様の原理で回転が必要
+
+### Angled Geometry with Trigonometry (三角関数による斜め構造)
+
+斜めに伸びる構造（端子など）は三角関数で角度を計算:
+
+```openscad
+// 例: 長さ 4.0mm の端子が Z 方向に 1.4mm 上昇する場合
+terminal_len = 4.0;
+terminal_rise = 1.4;  // Z方向の上昇量
+
+// Z軸からの傾き角度
+terminal_angle = acos(terminal_rise / terminal_len);  // ≈ 69.5°
+
+// 外側（+Y方向）に傾ける場合
+rotate([-terminal_angle, 0, 0])  // 負の角度で +Y 方向に傾く
+    translate([0, 0, terminal_len/2])
+        cube([width, thickness, terminal_len], center = true);
+```
+
+**角度計算の選択:**
+- `acos(Δz / length)`: Z軸からの角度（斜めに倒れる角度）
+- `asin(Δz / length)`: 水平からの角度（仰角）
+
+**回転符号の決定:**
+- X軸周りの回転 `rotate([θ, 0, 0])`:
+  - 正の角度: Z+ が Y- 方向に傾く
+  - 負の角度: Z+ が Y+ 方向に傾く
+- 外側に傾けるか内側に傾けるかで符号を決める
+
 ### Mating Structure Design (嵌合構造の設計)
 
 既存パーツ（コネクタ、ブラケット等）と嵌合する構造を設計する場合:
