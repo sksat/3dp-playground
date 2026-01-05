@@ -71,14 +71,10 @@ exp_top_corner_r = 3;       // 角丸半径
 // 基板マウントパラメータ（exp_top_pcb_mount.scad 用）
 // 別パーツを内部に配置し、外側からネジ固定
 pcb_mount_width = 65;           // マウントの幅（Y方向）
-pcb_mount_thickness = 5;        // マウントの厚さ（Z方向）
+pcb_mount_thickness = 8;        // マウントの厚さ（Z方向）- インサート穴内蔵
 pcb_mount_y = -3;               // マウントのY位置
 pcb_mount_z_offset = 15;        // 側壁底面からのオフセット
 pcb_mount_clearance = 0.3;      // クリアランス
-
-// ボスパラメータ（exp_top_pcb_mount.scad と同じ）
-pcb_mount_boss_d = 8;           // ボス直径
-pcb_mount_boss_length = 3;      // ボス長さ
 
 // レッジパラメータ（台を支える出っ張り）
 ledge_depth = 4;                // レッジの奥行き（内壁からの突出量）
@@ -396,7 +392,7 @@ module expansion_top_walls() {
                   slot_height], center=true);
 
         // 基板マウント用ネジ穴（壁を貫通）
-        // M3 x 8mm: 壁(3mm) + インサート(5mm)
+        // M3 x 8mm: 壁(3mm) + マウント内インサート(5mm)
         screw_z = pcb_mount_z_offset + pcb_mount_thickness/2;
         for (side = [-1, 1]) {
             // 内壁の内側から始めて壁を貫通
