@@ -218,8 +218,17 @@ module mabuchi_motor_fa130_cutout(depth = undef, tolerance = default_tolerance) 
 // FA-130 はめ込み式マウント
 // anchor = "motor": モーター座標系と揃う（配置が簡単）
 // anchor = "bottom": 底面が Z=0（印刷向け）
+// retention = true: リテンションクリップ（カエシ）を追加
+//   clip_length: クリップアーム長さ（挿入口から突き出す長さ）
+//   clip_width: アーム幅
+//   slit_width: アームを分離するスリット幅
+//   tab_depth: 爪の掛かり深さ（内側への突出量）
+//   tab_thickness: 爪の厚さ
 module mabuchi_motor_fa130_mount(wall = 2, base = 3, tolerance = default_tolerance,
-                                  anchor = "motor") {
+                                  anchor = "motor", retention = true,
+                                  clip_length = 2, clip_width = 6,
+                                  slit_width = 1.5, tab_depth = 1,
+                                  tab_thickness = 1.5) {
     // マウント外形（D形状）
     outer_d = fa130_housing_d + tolerance + wall * 2;
     outer_h = fa130_housing_h + tolerance + wall * 2;
@@ -228,32 +237,98 @@ module mabuchi_motor_fa130_mount(wall = 2, base = 3, tolerance = default_toleran
     // アンカーによる Z オフセット
     z_offset = (anchor == "bottom") ? -outer_h/2 : 0;
 
+    // クリップ関連の寸法
+    inner_d = fa130_housing_d + tolerance;  // モーター収納部の直径
+    slit_depth = 10;  // スリットがマウント内に入り込む深さ（弾性確保）
+
     translate([0, 0, z_offset]) {
         difference() {
-            // 外形（+X方向に延伸）
-            rotate([0, 90, 0])
-                linear_extrude(mount_len)
-                    intersection() {
-                        circle(d = outer_d, $fn = 48);
-                        square([outer_h, outer_d], center = true);
+            union() {
+                // マウント本体
+                difference() {
+                    // 外形（+X方向に延伸）
+                    rotate([0, 90, 0])
+                        linear_extrude(mount_len)
+                            intersection() {
+                                circle(d = outer_d, $fn = 48);
+                                square([outer_h, outer_d], center = true);
+                            }
+
+                    // モーター収納部（+X から）
+                    translate([base, 0, 0])
+                        mabuchi_motor_fa130_cutout(fa130_body_len + 0.1, tolerance);
+
+                    // シャフト穴（軸受けホルダーを避ける）
+                    translate([-0.1, 0, 0])
+                        rotate([0, 90, 0])
+                            cylinder(h = base + 0.2, d = fa130_bearing_holder_d + tolerance, $fn = 24);
+
+                    // 端子用開口（-Z 側、挿入口付近を完全オープン）
+                    // モーターは180°回転して挿入されるため、端子は -Z 側に来る
+                    terminal_slot_len = fa130_cap_len + 2;  // 端子領域 + 余裕
+                    translate([mount_len - terminal_slot_len, -outer_d/2, -(fa130_housing_h + tolerance)/2 - wall - 0.1])
+                        cube([terminal_slot_len + 0.1, outer_d, wall + 0.2]);
+                }
+
+                // リテンションクリップ（カエシ）
+                // マウント外形の曲面部分が伸びた形で自然に見える
+                if (retention) {
+                    for (dy = [-1, 1]) {
+                        // クリップアーム（マウント曲面部分の延長、爪の手前まで）
+                        // 円弧形状でマウント外形と連続する
+                        arm_len = clip_length - tab_thickness;  // 爪の手前まで
+                        translate([mount_len - 0.1, 0, 0])
+                            rotate([0, 90, 0])
+                                linear_extrude(arm_len + 0.1)
+                                    intersection() {
+                                        // 外側円弧（壁部分）
+                                        difference() {
+                                            circle(d = outer_d, $fn = 48);
+                                            circle(d = inner_d, $fn = 48);
+                                        }
+                                        // 曲面部分のみ（±Y 側、壁の中心位置）
+                                        // 2D: X→Z(3D), Y→Y(3D)
+                                        translate([0, dy * (inner_d/2 + wall/2)])
+                                            square([clip_width, wall * 2], center = true);
+                                    }
+
+                        // 爪（アームから爪先端まで滑らかに繋ぐ）
+                        // hull() でアーム先端の円弧断面と爪先端を接続
+                        tab_inner_y = dy * (inner_d/2 - tab_depth);  // 爪の内側面
+                        tab_outer_y = dy * (inner_d/2);              // 爪の外側面（アーム内側と同じ）
+                        hull() {
+                            // アーム先端の断面（薄いスライス）
+                            translate([mount_len + arm_len - 0.1, 0, 0])
+                                rotate([0, 90, 0])
+                                    linear_extrude(0.1)
+                                        intersection() {
+                                            difference() {
+                                                circle(d = outer_d, $fn = 48);
+                                                circle(d = inner_d, $fn = 48);
+                                            }
+                                            translate([0, dy * (inner_d/2 + wall/2)])
+                                                square([clip_width, wall * 2], center = true);
+                                        }
+                            // 爪先端（直方体）
+                            translate([mount_len + clip_length - 0.1, tab_inner_y + (dy < 0 ? 0 : -tab_depth), -clip_width/2])
+                                cube([0.1, tab_depth, clip_width]);
+                        }
                     }
+                }
+            }
 
-            // モーター収納部（+X から）
-            translate([base, 0, 0])
-                mabuchi_motor_fa130_cutout(fa130_body_len + 0.1, tolerance);
-
-            // シャフト穴（軸受けホルダーを避ける）
-            translate([-0.1, 0, 0])
-                rotate([0, 90, 0])
-                    cylinder(h = base + 0.2, d = fa130_bearing_holder_d + tolerance, $fn = 24);
-
-            // 端子用開口（-Z 側、挿入口付近を完全オープン）
-            // モーターは180°回転して挿入されるため、端子は -Z 側に来る
-            terminal_slot_len = fa130_cap_len + 2;  // 端子領域 + 余裕
-            translate([mount_len - terminal_slot_len, -outer_d/2, -(fa130_housing_h + tolerance)/2 - wall - 0.1])
-                cube([terminal_slot_len + 0.1, outer_d, wall + 0.2]);
+            // スリット（アームをマウント本体から分離して弾性を持たせる）
+            if (retention) {
+                for (dy = [-1, 1]) {
+                    // アームの両側（±Z 側）にスリット
+                    for (dz = [-1, 1]) {
+                        slit_z = dz * (clip_width/2 + slit_width/2);
+                        translate([mount_len - slit_depth, dy * (inner_d/2 + wall/2) - wall/2 - 0.1, slit_z - slit_width/2])
+                            cube([slit_depth + clip_length - tab_thickness + 0.2, wall + 0.2, slit_width]);
+                    }
+                }
+            }
         }
-
     }
 }
 
@@ -269,8 +344,13 @@ module mabuchi_motor_fa130_in_mount(base = 3) {
 // 便利モジュール（エイリアス）
 module fa130_motor() { mabuchi_motor_fa130(); }
 module fa130_mount(wall = 2, base = 3, tolerance = default_tolerance,
-                   anchor = "motor") {
-    mabuchi_motor_fa130_mount(wall, base, tolerance, anchor);
+                   anchor = "motor", retention = true,
+                   clip_length = 2, clip_width = 6,
+                   slit_width = 1.5, tab_depth = 1,
+                   tab_thickness = 1.5) {
+    mabuchi_motor_fa130_mount(wall, base, tolerance, anchor, retention,
+                               clip_length, clip_width, slit_width,
+                               tab_depth, tab_thickness);
 }
 module fa130_motor_in_mount(base = 3) { mabuchi_motor_fa130_in_mount(base); }
 module fa130_mount_cutout(depth = undef, tolerance = default_tolerance) {
