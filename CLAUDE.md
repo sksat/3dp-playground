@@ -601,6 +601,44 @@ translate([x, -wall_y - 0.1, z])
 - テキストを壁表面に配置し、くり抜きだけ手前に → Z-fighting が発生
 - 側面テキストを突出させる → 印刷時にオーバーハングが発生
 
+### Customizer JSON Presets (プリセットファイル)
+
+OpenSCAD Customizer のパラメータをJSONファイルで管理し、GUI や CLI から適用できる。
+
+**ファイル配置:**
+- JSON ファイル名は SCAD ファイルと同名にする
+- 例: `expansion_top.scad` → `expansion_top.json`
+- 複数ファイルで同じプリセットを使う場合はコピーを配置
+
+**JSON 形式:**
+```json
+{
+    "fileFormatVersion": "1",
+    "parameterSets": {
+        "preset-name": {
+            "variable_name": "value",
+            "numeric_var": "123",
+            "bool_var": "false"
+        }
+    }
+}
+```
+
+**GUI での使用:**
+1. View → Customizer でパネル表示
+2. プリセットドロップダウンから選択
+
+**CLI での使用:**
+```bash
+openscad -p preset.json -P "preset-name" -o output.3mf input.scad
+```
+
+**マルチカラー 3MF 出力:**
+```bash
+openscad --enable=lazy-union -O export-3mf/material-type=color \
+  -p preset.json -P "preset-name" -o output.3mf input.scad
+```
+
 ### Design for Reusability (再利用性を考慮した設計)
 
 複数ファイルで共通の設定を使いたい場合（Customizer プリセット共有など）:
@@ -610,9 +648,25 @@ translate([x, -wall_y - 0.1, z])
 2. 変数名を統一する（後から変更は影響範囲が大きい）
 3. include 時の変数上書き挙動を理解しておく
 
+**変数名の統一例:**
+```openscad
+// multi_connector_panel.scad
+top_label_1 = "COM1";
+top_label_2 = "COM2";
+panel_title = "Panel v0.1";
+
+// expansion_top.scad（同じ変数名を使用）
+top_label_1 = "EXT1";  // デフォルト値は異なってもOK
+top_label_2 = "EXT2";
+panel_title = "Expansion v0.1";
+```
+
+同じ変数名を使えば、1つの JSON プリセットで両方のファイルに同じ値を適用できる。
+
 **トレードオフ:**
 - 同じ変数名: プリセット共有可能、ただし include 時に衝突
 - 異なる変数名: 衝突なし、ただしプリセット個別管理
+- 独自の値が必要な変数（例: lid_title）は別名にする
 
 ### Mating Structure Design (嵌合構造の設計)
 
