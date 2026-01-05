@@ -39,7 +39,7 @@ lip_angle = 45;               // リップ傾斜角度
 // マグネット・ネジ穴
 magnet_d = 6.0;               // マグネット直径
 magnet_h = 2.0;               // マグネット厚さ
-magnet_clearance = 0.1;       // マグネット穴のクリアランス
+magnet_clearance = 0.2;       // マグネット穴のクリアランス
 screw_d = 3.0;                // M3ネジ直径
 screw_clearance = 0.2;        // ネジ穴のクリアランス
 
