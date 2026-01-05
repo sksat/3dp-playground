@@ -889,3 +889,96 @@ rotate([-terminal_angle, 0, 0])  // 負の角度で +Y 方向に傾く
 // 円錐形ポスト
 cylinder(h = post_h, d1 = base_d, d2 = top_d, $fn = 24);
 ```
+
+### Shaft Hole Tolerance (シャフト穴の公差)
+
+モーターシャフト等に嵌合する穴の tolerance は印刷テストで調整が必要:
+
+| クリアランス | 結果 |
+|-------------|------|
+| 0.1mm | 小さすぎて入らない |
+| 0.3mm | 大きすぎてガタつく |
+| 0.2mm | ちょうど良い（FA-130 φ2mm シャフトの場合） |
+
+**教訓:**
+- 最初の値が正しいとは限らない
+- 小さすぎ/大きすぎの中間値を試す
+- Customizer パラメータで調整可能にしておくと便利
+
+```openscad
+// シャフト穴クリアランス
+shaft_tolerance = 0.2; // [0.1:0.1:0.5]
+
+// シャフト穴
+cylinder(h = hub_h, d = shaft_d + shaft_tolerance, $fn = 24);
+```
+
+### Fit Check Model Separation (フィットチェック用モデルの分離)
+
+マウント内にフィットチェック用のモーターを表示する場合、マウントモジュール内に含めると親の `color()` に影響される:
+
+```openscad
+// 問題: マウント全体に color("white") を適用するとモーターも白くなる
+color("white")
+    mabuchi_motor_fa130_mount(show_motor = true);  // モーターも白い
+```
+
+**解決策: フィットチェック用モデルを別モジュールに分離**
+
+```openscad
+// マウント本体
+if (show_mount) {
+    color("white")
+    translate([...]) rotate([...])
+        mabuchi_motor_fa130_mount(...);
+}
+
+// フィットチェック用モーター（別モジュール、同じ変換を適用）
+if (show_motor) {
+    translate([...]) rotate([...])
+        mabuchi_motor_fa130_in_mount(base = base);  // 色はモジュール内で指定
+}
+```
+
+### Part Export Flags (パーツ個別出力フラグ)
+
+複数パーツを含むデモファイルで、個別パーツを出力できるようにする:
+
+```openscad
+/* [表示設定] */
+show_motor = false;     // フィットチェック用（デフォルト false）
+show_propeller = true;
+show_mount = true;
+show_stand = true;
+
+// 個別出力例: プロペラだけ
+// openscad -o propeller.stl -D 'show_mount=false' -D 'show_stand=false' demo.scad
+```
+
+**ポイント:**
+- `show_motor` はデフォルト `false`（印刷対象外）
+- パーツ位置は `show_mount` 等の状態で切り替え（組み立て位置 or Z=0）
+
+### Z-Fighting as Clearance Indicator (Z-fighting はクリアランス問題のサイン)
+
+フィットチェック用モデルを表示した時に Z-fighting（面のちらつき）が発生する場合、クリアランスが正しく適用されていない可能性がある:
+
+```openscad
+// 問題: モーター位置が収納部とずれていて Z-fighting
+module motor_in_mount() {
+    translate([body_len, 0, 0])  // base を考慮していない
+        rotate([0, 180, 0])
+            motor();
+}
+
+// 修正: base を考慮
+module motor_in_mount(base = 3) {
+    translate([base + body_len, 0, 0])
+        rotate([0, 180, 0])
+            motor();
+}
+```
+
+**確認方法:**
+- 半透明（`%`）でマウントを表示し、モーターとの隙間を確認
+- Z-fighting が見えたら位置計算を見直す
