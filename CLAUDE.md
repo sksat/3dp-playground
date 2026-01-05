@@ -13,6 +13,9 @@ library_name/
 
 Import with relative paths: `use <../library_name.scad>`
 
+新しいものを設計する前に、リポジトリ内の既存ライブラリを確認すること。
+各ライブラリの `README.md` に機能と使い方が記載されている。
+
 ## Build Commands
 
 Generate STL from OpenSCAD files:
