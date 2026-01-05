@@ -253,6 +253,7 @@ module mabuchi_motor_fa130_mount(wall = 2, base = 3, tolerance = default_toleran
             translate([mount_len - terminal_slot_len, -outer_d/2, -(fa130_housing_h + tolerance)/2 - wall - 0.1])
                 cube([terminal_slot_len + 0.1, outer_d, wall + 0.2]);
         }
+
     }
 }
 

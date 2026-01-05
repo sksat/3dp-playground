@@ -3,7 +3,7 @@
 //
 // 横向きマウントの例（モーターを側面から挿入）
 //
-// 外形: 60mm x 40mm x 25mm
+// 外形: 40mm x 33mm x 25mm
 // 使用モーター: FA-130 x1
 // 使用ネジ: M3 x4（ベース固定用）
 //
@@ -55,13 +55,13 @@ mount_outer_h = fa130_housing_h + tolerance + wall * 2;
 mount_len = fa130_body_len + base;
 
 // ベース寸法
-base_w = 60;
-base_d = 40;
+base_w = 40;
+base_d = mount_len + 4;  // マウント長 + 余裕
 base_h = 5;
 
-// 取付穴
+// 取付穴（M3）
 mount_hole_d = 3.4;  // M3 クリアランス
-mount_hole_inset = 8;
+mount_hole_inset = 4;  // 端からの距離
 
 // ===== 組み立て =====
 
