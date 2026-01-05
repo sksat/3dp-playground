@@ -25,7 +25,7 @@
 // ===== 定数 =====
 
 default_tolerance = 0.3;
-default_shaft_tolerance = 0.1;  // シャフト用（タイトフィット）
+default_shaft_tolerance = 0.2;  // シャフト用（3Dプリント検証済み）
 
 // ===== FA-130 モーター =====
 // データシート: FA-130RA (MD121009-1)
@@ -242,14 +242,15 @@ module mabuchi_motor_fa130_mount(wall = 2, base = 3, tolerance = default_toleran
             translate([base, 0, 0])
                 mabuchi_motor_fa130_cutout(fa130_body_len + 0.1, tolerance);
 
-            // シャフト穴（base を貫通）
+            // シャフト穴（軸受けホルダーを避ける）
             translate([-0.1, 0, 0])
-                rotate([0, -90, 0])
-                    cylinder(h = base + 0.2, d = fa130_shaft_d + 1, $fn = 24);
+                rotate([0, 90, 0])
+                    cylinder(h = base + 0.2, d = fa130_bearing_holder_d + tolerance, $fn = 24);
 
-            // 端子用開口（+Z 側、挿入口付近を完全オープン）
+            // 端子用開口（-Z 側、挿入口付近を完全オープン）
+            // モーターは180°回転して挿入されるため、端子は -Z 側に来る
             terminal_slot_len = fa130_cap_len + 2;  // 端子領域 + 余裕
-            translate([mount_len - terminal_slot_len, -outer_d/2, (fa130_housing_h + tolerance)/2 - 0.1])
+            translate([mount_len - terminal_slot_len, -outer_d/2, -(fa130_housing_h + tolerance)/2 - wall - 0.1])
                 cube([terminal_slot_len + 0.1, outer_d, wall + 0.2]);
         }
     }

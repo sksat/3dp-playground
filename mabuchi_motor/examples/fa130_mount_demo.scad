@@ -1,9 +1,9 @@
 // FA-130 Mount Demo
 // FA-130 マウントデモ
 //
-// シンプルな取付ベースの例
+// 横向きマウントの例（モーターを側面から挿入）
 //
-// 外形: 60mm x 40mm x 35mm
+// 外形: 60mm x 40mm x 25mm
 // 使用モーター: FA-130 x1
 // 使用ネジ: M3 x4（ベース固定用）
 //
@@ -65,6 +65,12 @@ mount_hole_inset = 8;
 
 // ===== 組み立て =====
 
+// マウント配置（横向き: シャフトが -Y 方向、モーターは +Y から挿入）
+// rotate([180, 0, 90]) で端子側を上、シャフトを Y 方向に
+mount_x = base_w / 2;
+mount_y = 2;  // カップラーを板の端に寄せる
+mount_z = base_h + mount_outer_h / 2;
+
 // ベースプレート
 if (show_base) {
     color("white")
@@ -86,31 +92,37 @@ if (show_base) {
     }
 }
 
-// モーターマウント（ベース中央、シャフトが上向き）
-// rotate([0, 90, 0]) で X+ → Z-、シャフト側（X=0）が上になる
-// 回転後の Z 範囲: [-mount_len, 0]、translate で持ち上げる
+// モーターマウント（横向き、端子が上、シャフトが -Y 方向）
+// rotate([180, 0, 90]) でマウントを反転し、端子開口を上に、シャフトを Y 方向に
 if (show_mount) {
     color("white")
-    translate([base_w/2, base_d/2, base_h + mount_len])
-        rotate([0, 90, 0])
+    translate([mount_x, mount_y, mount_z])
+        rotate([180, 0, 90])
             mabuchi_motor_fa130_mount(wall = wall, base = base, tolerance = tolerance,
                                        anchor = "motor");
 }
 
-// フィットチェック用モーター（マウントと同じ変換を適用）
+// フィットチェック用モーター（マウントと同じ変換）
 if (show_motor) {
-    translate([base_w/2, base_d/2, base_h + mount_len])
-        rotate([0, 90, 0])
+    translate([mount_x, mount_y, mount_z])
+        rotate([180, 0, 90])
             mabuchi_motor_fa130_in_mount(base = base);
 }
 
 // カップラー
 if (show_coupler) {
-    // show_mount=true: 組み立て位置、false: 印刷用（Z=0）
-    coupler_z = show_mount ? base_h + mount_len + fa130_shaft_protrusion + fa130_bearing_holder_len - coupler_length : 0;
+    // show_mount=true: 組み立て位置（シャフト先端）、false: 印刷用（Z=0）
+    // シャフトは -Y 方向に突出（mount_y がシャフト穴位置）
+    shaft_tip_y = mount_y - fa130_shaft_protrusion - fa130_bearing_holder_len;
 
     color("orange")
-    translate([show_mount ? base_w/2 : 0, show_mount ? base_d/2 : 0, coupler_z])
+    if (show_mount) {
+        translate([mount_x, shaft_tip_y + coupler_length, mount_z])
+            rotate([90, 0, 0])
+                fa130_shaft_coupler(outer_d = coupler_outer_d, length = coupler_length,
+                                    with_slit = coupler_with_slit);
+    } else {
         fa130_shaft_coupler(outer_d = coupler_outer_d, length = coupler_length,
                             with_slit = coupler_with_slit);
+    }
 }
