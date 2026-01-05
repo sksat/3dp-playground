@@ -37,13 +37,39 @@ default_shaft_tolerance = 0.1;  // シャフト用（タイトフィット）
 //   Z軸: 端子方向（+Z にフラット面・端子）
 //   Y軸: 曲面方向
 
+// ----- FA-130 寸法定数 -----
+
+// ハウジング
+fa130_housing_d = 20.1;      // ハウジング直径（曲面方向）
+fa130_housing_h = 15.1;      // フラット面間の幅（Z方向）
+fa130_cap_len = 5.2;         // プラスチック基部の長さ（X方向）
+fa130_body_len = 25.0;       // 全長（プラスチック基部 + 金属ハウジング）
+fa130_housing_len = fa130_body_len - fa130_cap_len;  // 金属ハウジングの長さ = 19.8
+
+// シャフト
+fa130_shaft_d = 2.0;         // シャフト直径
+fa130_shaft_len = 38.0;      // シャフト全長
+fa130_shaft_protrusion = 9.4;  // 金属ハウジングからの突出量
+
+// 軸受けホルダー（シャフト側）
+fa130_bearing_holder_d = 6.15;
+fa130_bearing_holder_len = 1.7;
+
+// 軸受けホルダー（プラスチック側）
+fa130_rear_holder_d = 10.0;
+fa130_rear_holder_len = 2.3;
+
+// 端子
+fa130_terminal_bump_w = 8.5;   // 出っ張り幅（Y方向）
+fa130_terminal_bump_h = 1.4;   // 出っ張り高さ（Z方向突出量）
+
 // FA-130 ハウジング断面（D形状）
 // 原点: 中心
 // 2D平面でY=曲面方向、X=フラット面方向として定義
 // 3D配置時に回転してYZ平面に配置
 module _fa130_housing_2d(tolerance = 0) {
-    d = 20.1 + tolerance;  // 曲面方向 (φ20.1)
-    h = 15 + tolerance;    // フラット面方向
+    d = fa130_housing_d + tolerance;   // 曲面方向
+    h = fa130_housing_h + tolerance;   // フラット面方向
     intersection() {
         circle(d = d, $fn = 48);
         square([h, d], center = true);  // [フラット方向, 曲面方向]
@@ -54,35 +80,31 @@ module _fa130_housing_2d(tolerance = 0) {
 // +X 方向にシャフト突出
 // +Z 方向にフラット面・端子、±Y 方向に曲面
 module mabuchi_motor_fa130() {
-    // ===== 寸法 =====
-    housing_d = 20.1;    // ハウジング直径（曲面方向）
-    housing_h = 15.1;    // フラット面間の幅（Z方向）
-    cap_len = 5.2;       // プラスチック基部の長さ（X方向）
-    body_len = 25.0;     // 全長（プラスチック基部 + 金属ハウジング）
-    housing_len = body_len - cap_len;  // 金属ハウジングの長さ = 19.8
+    // ===== 寸法（外部定数を参照） =====
+    housing_d = fa130_housing_d;
+    housing_h = fa130_housing_h;
+    cap_len = fa130_cap_len;
+    body_len = fa130_body_len;
+    housing_len = fa130_housing_len;
 
-    // シャフト
-    shaft_d = 2.0;       // シャフト直径
-    shaft_len = 38.0;    // シャフト全長
-    shaft_protrusion = 9.4;  // 金属ハウジングからの突出量
+    shaft_d = fa130_shaft_d;
+    shaft_len = fa130_shaft_len;
+    shaft_protrusion = fa130_shaft_protrusion;
     // 制約: シャフト先端 = body_len + shaft_protrusion = 34.4
     //       シャフト後端 = シャフト先端 - shaft_len = -3.6
     shaft_tip = body_len + shaft_protrusion;
     shaft_start = shaft_tip - shaft_len;
 
-    // 軸受けホルダー（シャフト側）
-    bearing_holder_d = 6.15;
-    bearing_holder_len = 1.7;
+    bearing_holder_d = fa130_bearing_holder_d;
+    bearing_holder_len = fa130_bearing_holder_len;
 
-    // 軸受けホルダー（プラスチック側）
-    rear_holder_d = 10.0;
-    rear_holder_len = 2.3;
+    rear_holder_d = fa130_rear_holder_d;
+    rear_holder_len = fa130_rear_holder_len;
 
-    // 端子用出っ張り（プラスチック基部上面）
-    terminal_bump_w = 8.5;   // 幅（Y方向）
-    terminal_bump_h = 1.4;   // 高さ（Z方向突出量）
+    terminal_bump_w = fa130_terminal_bump_w;
+    terminal_bump_h = fa130_terminal_bump_h;
 
-    // 端子
+    // 端子（モデル用詳細寸法）
     terminal_x = 3.4;        // X位置
     terminal_w = 0.8;        // 端子幅（X方向）
     terminal_t = 0.1;        // 端子厚み（Y方向）
@@ -171,58 +193,84 @@ module mabuchi_motor_fa130() {
                     cube([terminal_w, terminal_t, terminal_len], center = true);
 }
 
-// FA-130 マウント用カットアウト（difference用）
-// 原点: モーター挿入口の中心（シャフト側）
-// -X 方向に掘り込み（モーターを +X から挿入）
-module mabuchi_motor_fa130_cutout(depth = undef, tolerance = default_tolerance) {
-    housing_len = 19.8;
-    actual_depth = is_undef(depth) ? housing_len + 4 : depth;
+// ===== FA-130 マウント =====
+// 座標系（モーターと同じ方向）:
+//   X軸: シャフト方向（+X にシャフト穴）
+//   Z軸: フラット面方向（±Z にフラット面）
+//   Y軸: 曲面方向
+//
+// anchor パラメータ:
+//   "motor"  - 原点をモーター座標系に揃える（シャフト穴中心）
+//   "bottom" - 原点を底面に揃える（Z=0 が底面、印刷向け）
 
-    translate([0.1, 0, 0])
+// FA-130 マウント用カットアウト（difference用）
+// 原点: モーター挿入口の中心
+// +X 方向に掘り込み（モーターを -X から挿入）
+module mabuchi_motor_fa130_cutout(depth = undef, tolerance = default_tolerance) {
+    actual_depth = is_undef(depth) ? fa130_body_len : depth;
+
+    translate([-0.1, 0, 0])
         rotate([0, 90, 0])
             linear_extrude(actual_depth + 0.2)
                 _fa130_housing_2d(tolerance);
 }
 
 // FA-130 はめ込み式マウント
-// 原点: シャフト穴中心（+X面）
-// モーターは +X 方向から挿入
-module mabuchi_motor_fa130_mount(wall = 2, base = 3, tolerance = default_tolerance) {
-    housing_d = 20.1;
-    housing_h = 15;
-    housing_len = 19.8;
-    shaft_d = 2;
-
+// anchor = "motor": モーター座標系と揃う（配置が簡単）
+// anchor = "bottom": 底面が Z=0（印刷向け）
+module mabuchi_motor_fa130_mount(wall = 2, base = 3, tolerance = default_tolerance,
+                                  anchor = "motor") {
     // マウント外形（D形状）
-    outer_d = housing_d + tolerance + wall * 2;
-    outer_h = housing_h + tolerance + wall * 2;
-    mount_len = housing_len + 4 + base;  // ハウジング + キャップ + ベース
+    outer_d = fa130_housing_d + tolerance + wall * 2;
+    outer_h = fa130_housing_h + tolerance + wall * 2;
+    mount_len = fa130_body_len + base;  // モーター全長 + ベース
 
-    difference() {
-        // 外形（-X方向に延伸）
-        rotate([0, 90, 0])
-            linear_extrude(mount_len)
-                intersection() {
-                    circle(d = outer_d, $fn = 48);
-                    square([outer_h, outer_d], center = true);
-                }
+    // アンカーによる Z オフセット
+    z_offset = (anchor == "bottom") ? -outer_h/2 : 0;
 
-        // モーター収納部
-        translate([-base, 0, 0])
-            mabuchi_motor_fa130_cutout(housing_len + 4 + 0.1, tolerance);
-
-        // シャフト穴（+X方向に貫通）
-        translate([-mount_len - 0.1, 0, 0])
+    translate([0, 0, z_offset]) {
+        difference() {
+            // 外形（+X方向に延伸）
             rotate([0, 90, 0])
-                cylinder(h = base + 0.2, d = shaft_d + 1, $fn = 24);
+                linear_extrude(mount_len)
+                    intersection() {
+                        circle(d = outer_d, $fn = 48);
+                        square([outer_h, outer_d], center = true);
+                    }
+
+            // モーター収納部（+X から）
+            translate([base, 0, 0])
+                mabuchi_motor_fa130_cutout(fa130_body_len + 0.1, tolerance);
+
+            // シャフト穴（base を貫通）
+            translate([-0.1, 0, 0])
+                rotate([0, -90, 0])
+                    cylinder(h = base + 0.2, d = fa130_shaft_d + 1, $fn = 24);
+
+            // 端子用開口（+Z 側、挿入口付近を完全オープン）
+            terminal_slot_len = fa130_cap_len + 2;  // 端子領域 + 余裕
+            translate([mount_len - terminal_slot_len, -outer_d/2, (fa130_housing_h + tolerance)/2 - 0.1])
+                cube([terminal_slot_len + 0.1, outer_d, wall + 0.2]);
+        }
     }
+}
+
+// FA-130 マウント内のモーター位置にモーターモデルを表示
+// フィットチェック用（マウントと同じ変換を適用して使用）
+// base: マウントの base パラメータと同じ値を指定
+module mabuchi_motor_fa130_in_mount(base = 3) {
+    translate([base + fa130_body_len, 0, 0])
+        rotate([0, 180, 0])
+            mabuchi_motor_fa130();
 }
 
 // 便利モジュール（エイリアス）
 module fa130_motor() { mabuchi_motor_fa130(); }
-module fa130_mount(wall = 2, base = 3, tolerance = default_tolerance) {
-    mabuchi_motor_fa130_mount(wall, base, tolerance);
+module fa130_mount(wall = 2, base = 3, tolerance = default_tolerance,
+                   anchor = "motor") {
+    mabuchi_motor_fa130_mount(wall, base, tolerance, anchor);
 }
+module fa130_motor_in_mount(base = 3) { mabuchi_motor_fa130_in_mount(base); }
 module fa130_mount_cutout(depth = undef, tolerance = default_tolerance) {
     mabuchi_motor_fa130_cutout(depth, tolerance);
 }
@@ -260,11 +308,10 @@ module shaft_coupler(shaft_d = 2, outer_d = 8, length = 10,
 module fa130_shaft_coupler(outer_d = 8, length = 10,
                            tolerance = default_shaft_tolerance,
                            with_slit = false, slit_width = 1) {
-    shaft_coupler(2, outer_d, length, tolerance, with_slit, slit_width);
+    shaft_coupler(fa130_shaft_d, outer_d, length, tolerance, with_slit, slit_width);
 }
 
 // ===== デモ表示 =====
-// 単体で開いた場合のみ表示（use/include 時は _mabuchi_motor_lib を定義して非表示に）
-if (is_undef(_mabuchi_motor_lib)) {
-    mabuchi_motor_fa130();
-}
+// ライブラリとして使用するためデモ表示なし
+// 単体で確認したい場合は以下をコメント解除：
+// mabuchi_motor_fa130();
