@@ -1,0 +1,26 @@
+{
+    "fileFormatVersion": "1",
+    "parameterSets": {
+        "2x1": {
+            "units_x": "2",
+            "units_y": "1",
+            "magnets": "true",
+            "screws": "false",
+            "simple_version": "false"
+        },
+        "2x2": {
+            "units_x": "2",
+            "units_y": "2",
+            "magnets": "true",
+            "screws": "false",
+            "simple_version": "false"
+        },
+        "3x3": {
+            "units_x": "3",
+            "units_y": "3",
+            "magnets": "true",
+            "screws": "false",
+            "simple_version": "false"
+        }
+    }
+}

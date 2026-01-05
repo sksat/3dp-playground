@@ -169,17 +169,18 @@ module bin_base_single() {
     // rotate([90, 0, 0]): profile Y→Z（高さ）, extrusion Z→-Y
     for (angle = [0, 90, 180, 270]) {
         rotate([0, 0, angle])
-        translate([half - wall_w, half - fillet, 0])
+        translate([half - wall_w, half - wall_w, 0])
             rotate([90, 0, 0])
-                linear_extrude(height = bin_size - fillet * 2)
+                linear_extrude(height = bin_size - wall_w * 2)
                     bin_base_profile_2d();
     }
 
     // 4隅の角丸部分
+    // コーナー中心を half - wall_w に配置（壁の外端 half と一致させる）
     // 各コーナーの回転角: [1,1]→0°, [-1,1]→90°, [-1,-1]→180°, [1,-1]→270°
     for (corner = [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
-        cx = corner[0] * (half - fillet);
-        cy = corner[1] * (half - fillet);
+        cx = corner[0] * (half - wall_w);
+        cy = corner[1] * (half - wall_w);
         corner_angle =
             (corner[0] > 0 && corner[1] > 0) ? 0 :
             (corner[0] < 0 && corner[1] > 0) ? 90 :
@@ -193,8 +194,8 @@ module bin_base_single() {
 
     // 中央の塗りつぶし
     linear_extrude(height = bin_base_h)
-        offset(r = fillet)
-            offset(r = -fillet)
+        offset(r = wall_w)
+            offset(r = -wall_w)
                 square([bin_size - wall_w * 2, bin_size - wall_w * 2], center = true);
 }
 
@@ -288,9 +289,9 @@ module gridfinity_bin(units_x, units_y, units_z, lip = true, wall_thickness = 1.
     total_x = units_x * grid_unit - bin_clearance;
     total_y = units_y * grid_unit - bin_clearance;
     bin_height = units_z * height_unit;
-    fillet = bin_fillet;
+    corner_r = 2.4;  // bin_base_single の wall_w と同じ
 
-    // リップ高さを含めた全体高さ
+    // 全体高さ（リップ含む）
     total_height = bin_height + (lip ? lip_h : 0);
 
     difference() {
@@ -305,51 +306,33 @@ module gridfinity_bin(units_x, units_y, units_z, lip = true, wall_thickness = 1.
                 }
             }
 
-            // 本体（ベースより上の部分）
+            // 本体（ベースより上）
             translate([0, 0, bin_base_h])
                 linear_extrude(height = bin_height - bin_base_h + (lip ? lip_h : 0))
-                    offset(r = fillet)
-                        offset(r = -fillet)
+                    offset(r = corner_r)
+                        offset(r = -corner_r)
                             square([total_x, total_y], center = true);
         }
 
-        // 内側のくり抜き
+        // 内側のくり抜き（底面を残す）
         inner_x = total_x - wall_thickness * 2;
         inner_y = total_y - wall_thickness * 2;
-        inner_fillet = fillet - wall_thickness;
+        inner_r = max(corner_r - wall_thickness, 0.5);
 
-        translate([0, 0, wall_thickness])
-            linear_extrude(height = total_height)
-                offset(r = max(inner_fillet, 0.5))
-                    offset(r = -max(inner_fillet, 0.5))
+        // くり抜きはベース上面から開始（壁厚分は底として残す）
+        translate([0, 0, bin_base_h])
+            linear_extrude(height = total_height - bin_base_h + 0.1)
+                offset(r = inner_r)
+                    offset(r = -inner_r)
                         square([inner_x, inner_y], center = true);
 
-        // スタッキングリップのカット
+        // スタッキングリップ（上端内側を斜めにカット）
         if (lip) {
             translate([0, 0, bin_height])
-                difference() {
-                    translate([0, 0, -0.1])
-                        linear_extrude(height = lip_h + 0.2)
-                            offset(r = fillet)
-                                offset(r = -fillet)
-                                    square([total_x + 0.2, total_y + 0.2], center = true);
-
-                    // リップ形状を残す
-                    for (angle = [0, 90, 180, 270]) {
-                        rotate([0, 0, angle])
-                            translate([total_x/2 - lip_h, 0, 0])
-                                rotate([90, 0, 0])
-                                    linear_extrude(height = total_y, center = true)
-                                        lip_profile_2d();
-                    }
-
-                    // 内側のリップ部分
-                    translate([0, 0, -0.1])
-                        linear_extrude(height = lip_h + 0.2)
-                            offset(r = fillet - lip_h)
-                                offset(r = -(fillet - lip_h))
-                                    square([total_x - lip_h * 2, total_y - lip_h * 2], center = true);
-                }
+                linear_extrude(height = lip_h + 0.1, scale = (total_x + lip_h * 2) / total_x)
+                    offset(r = inner_r)
+                        offset(r = -inner_r)
+                            square([inner_x, inner_y], center = true);
         }
     }
 }
