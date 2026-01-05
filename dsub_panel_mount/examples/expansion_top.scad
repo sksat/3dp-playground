@@ -14,10 +14,11 @@
 //
 // ビルド:
 //   openscad --enable=lazy-union -O export-3mf/material-type=color \
-//     -D 'show_plugs=false' -D 'show_pico=false' -D 'show_lid=false' \
+//     -D 'show_plugs=false' -D 'show_pcb_mount=false' -D 'show_lid=false' \
 //     -o expansion_top.3mf expansion_top.scad
 
 use <../dsub_panel_mount.scad>
+use <exp_top_pcb_mount.scad>
 include <BOSL2/std.scad>
 include <NopSCADlib/core.scad>
 include <NopSCADlib/vitamins/d_connectors.scad>
@@ -29,9 +30,9 @@ include <expansion_top_lid.scad>
 
 // ===== フィットチェック用 =====
 // 単体で開いた時のデフォルト値
-// include される場合は呼び出し側で show_plugs を定義
+// include される場合は呼び出し側で各 show_* を定義
 show_plugs = true;
-show_pico = true;          // Raspberry Pi Pico プレビュー
+show_pcb_mount = true;     // 基板マウント（別パーツ）プレビュー
 show_lid = true;           // 天板プレビュー
 
 // ===== タイトル・ラベル（カスタマイズ用） =====
@@ -67,19 +68,26 @@ exp_top_internal_h = 45;    // 内部高さ
 exp_top_wall = 3;           // 壁厚
 exp_top_corner_r = 3;       // 角丸半径
 
-// 梁パラメータ（基板固定用）
-beam_enabled = true;        // 梁の有効/無効
-beam_width = 65;            // 梁の幅（Y方向、全コネクタを覆う）
-beam_thickness = 5;         // 梁の厚さ（Z方向）
-beam_y = -3;                // 梁のY位置（コネクタ中心に合わせる）
-beam_z_offset = 15;         // 側壁底面からのオフセット
-beam_support_depth = 50;    // 三角サポートの奥行（壁からの距離、緩やかな傾斜）
-beam_support_start_z = 8;   // サポート開始高さ（コネクタ構造との干渉回避）
+// 基板マウントパラメータ（exp_top_pcb_mount.scad 用）
+// 別パーツを内部に配置し、外側からネジ固定
+pcb_mount_width = 65;           // マウントの幅（Y方向）
+pcb_mount_thickness = 5;        // マウントの厚さ（Z方向）
+pcb_mount_y = -3;               // マウントのY位置
+pcb_mount_z_offset = 15;        // 側壁底面からのオフセット
+pcb_mount_clearance = 0.3;      // クリアランス
+
+// ボスパラメータ（exp_top_pcb_mount.scad と同じ）
+pcb_mount_boss_d = 8;           // ボス直径
+pcb_mount_boss_length = 3;      // ボス長さ
+
+// レッジパラメータ（台を支える出っ張り）
+ledge_depth = 4;                // レッジの奥行き（内壁からの突出量）
+ledge_height = 2;               // レッジの高さ
 
 // Pico 配置パラメータ
 pico_count = 5;             // Pico の個数
 pico_spacing = 23;          // Pico 間隔（X方向、21mm幅 + 2mm隙間）
-pico_y = beam_y;            // Pico の Y 位置（梁と同じ）
+pico_y = pcb_mount_y;       // Pico の Y 位置（マウントと同じ）
 
 // 天板スロットパラメータ（後方からスライドして差し込む）
 lid_thickness = 3;          // 天板の厚さ（PLA強度確保）
@@ -341,7 +349,6 @@ module expansion_top_bottom() {
 // ===== 側壁（オープントップ） =====
 module expansion_top_walls() {
     inner_r = max(exp_top_corner_r - exp_top_wall, 0);
-    beam_length = exp_top_width - exp_top_wall * 2;  // 内壁間の長さ
 
     // 側壁
     difference() {
@@ -387,27 +394,27 @@ module expansion_top_walls() {
             cube([exp_top_width - exp_top_wall * 2 + lid_slot_depth * 2,
                   exp_top_wall + 0.2,
                   slot_height], center=true);
+
+        // 基板マウント用ネジ穴（壁を貫通）
+        // M3 x 8mm: 壁(3mm) + インサート(5mm)
+        screw_z = pcb_mount_z_offset + pcb_mount_thickness/2;
+        for (side = [-1, 1]) {
+            // 内壁の内側から始めて壁を貫通
+            translate([side * (exp_top_width/2 - exp_top_wall - 0.1), pcb_mount_y, screw_z])
+                rotate([0, side * 90, 0])
+                    cylinder(h = exp_top_wall + 0.2, d = 3.4, $fn=24);
+        }
     }
 
-    // 梁（側壁の後に追加、内壁に接続）
-    if (beam_enabled) {
-        // 梁本体
-        translate([0, beam_y, beam_z_offset + beam_thickness/2])
-            cube([beam_length, beam_width, beam_thickness], center=true);
-
-        // 三角サポート（壁から梁へ斜めに成長、印刷用）
-        // 左右の壁から中央方向へ、コネクタ構造より上から開始
-        inner_wall_x = exp_top_width/2 - exp_top_wall;  // 内壁のX位置
-        for (side = [-1, 1]) {
-            translate([side * inner_wall_x, beam_y, 0])
-                rotate([90, 0, 0])
-                    linear_extrude(height = beam_width, center = true)
-                        polygon([
-                            [0, beam_support_start_z],                 // 壁から少し上（干渉回避）
-                            [0, beam_z_offset + beam_thickness],       // 壁の上（梁上面）
-                            [-side * beam_support_depth, beam_z_offset] // 梁の底（中央方向）
-                        ]);
-        }
+    // 基板マウント用レッジ（台を支える出っ張り）
+    // 左右の内壁から突出
+    ledge_z = pcb_mount_z_offset;  // レッジ上面 = 台の底面位置
+    ledge_width = pcb_mount_width + 2;  // 台より少し広め
+    for (side = [-1, 1]) {
+        translate([side * (exp_top_width/2 - exp_top_wall - ledge_depth/2),
+                   pcb_mount_y,
+                   ledge_z - ledge_height/2])
+            cube([ledge_depth, ledge_width, ledge_height], center=true);
     }
 }
 
@@ -455,8 +462,8 @@ module expansion_top_plugs() {
 
 // ===== フィットチェック用 Raspberry Pi Pico =====
 module expansion_top_pico() {
-    // 梁上面の Z 位置
-    beam_top_z = exp_top_bottom_total + beam_z_offset + beam_thickness;
+    // マウント上面の Z 位置
+    mount_top_z = exp_top_bottom_total + pcb_mount_z_offset + pcb_mount_thickness;
 
     // Pico サイズ: 51mm x 21mm x 1.6mm
     // 変換後: 21mm(X) x 51mm(Y) x 1.6mm(Z)、USB が Y- 方向（手前）、水平配置
@@ -468,7 +475,7 @@ module expansion_top_pico() {
     for (i = [0:pico_count-1]) {
         x = -pico_row_width/2 + i * pico_spacing;
         // pcb() は中心基準、回転後は厚さ(1.6mm)の半分だけ上げて梁上面に底が来るようにする
-        translate([x, pico_y, beam_top_z + pico_thickness/2])
+        translate([x, pico_y, mount_top_z + pico_thickness/2])
             rotate([0, 0, 90])  // USB を手前（Y-）に向ける、水平配置
                 pcb(RPI_Pico);
     }
@@ -486,7 +493,13 @@ if (is_undef(show_expansion_top)) {
     if (show_plugs) {
         expansion_top_plugs();
     }
-    if (show_pico) {
+    if (show_pcb_mount) {
+        // 基板マウントを装着位置にプレビュー（Pico も含む）
+        mount_z = exp_top_bottom_total + pcb_mount_z_offset + pcb_mount_thickness/2;
+        translate([0, pcb_mount_y, mount_z]) {
+            color("gray") exp_top_pcb_mount_beam();
+        }
+        // Pico をマウント上に配置
         expansion_top_pico();
     }
     if (show_lid) {
