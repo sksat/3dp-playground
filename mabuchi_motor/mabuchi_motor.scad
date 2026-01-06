@@ -307,19 +307,14 @@ module mabuchi_motor_fa130_mount(wall = 2, base = 3, tolerance = default_toleran
 
                         // 爪本体
                         // tab_angle で爪先端を +X 方向にオフセット（傾きを調整）
+                        // 根元は外周（outer_d）に合わせ、X始点はケース終点に
+                        tab_base_y = dy * outer_d/2;  // 爪の根元Y位置（外周）
                         hull() {
-                            // アーム先端の断面（薄いスライス）
-                            translate([mount_len + arm_len - 0.1, 0, 0])
-                                rotate([0, 90, 0])
-                                    linear_extrude(0.1)
-                                        intersection() {
-                                            difference() {
-                                                circle(d = outer_d, $fn = 48);
-                                                circle(d = arm_inner_d, $fn = 48);
-                                            }
-                                            translate([0, dy * (arm_inner_d/2 + arm_thickness/2)])
-                                                square([clip_width, arm_thickness * 2], center = true);
-                                        }
+                            // 爪根元（ケース終点から、外周に接続）
+                            translate([mount_len - 0.1,
+                                       tab_base_y + (dy < 0 ? 0 : -arm_thickness),
+                                       -clip_width/2])
+                                cube([0.1, arm_thickness, clip_width]);
                             // 爪先端（tab_tip 厚の直方体）
                             // tab_angle 分 +X 方向にオフセット
                             translate([mount_len + clip_length - tab_tip + tab_angle,
