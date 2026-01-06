@@ -64,7 +64,7 @@ mount_hole_d = 3.4;  // M3 クリアランス
 mount_hole_pitch_x = 30;  // X方向ピッチ (5mm x 6)
 mount_hole_pitch_y = 25;  // Y方向ピッチ (5mm x 5)
 
-// ===== 組み立て =====
+// ===== モジュール =====
 
 // マウント配置（横向き: シャフトが -Y 方向、モーターは +Y から挿入）
 // rotate([180, 0, 90]) で端子側を上、シャフトを Y 方向に
@@ -73,59 +73,68 @@ mount_x = base_w / 2;
 mount_y = 0;  // シャフト側をベース前端（Y=0）に揃える
 mount_z = base_h + mount_outer_h / 2;
 
-// ベースプレート
-if (show_base) {
-    color("white")
-    difference() {
-        // 角丸プレート
-        hull() {
-            for (x = [5, base_w - 5], y = [5, base_d - 5]) {
-                translate([x, y, 0])
-                    cylinder(h = base_h, r = 5, $fn = 24);
+// マウントユニット（ベースプレート + マウント + インジケータ/カップラー位置）
+// シャフトは -Y 方向に出る
+// 原点: ベースプレートの (0,0,0) 角
+module fa130_mount_unit(show_base = true, show_mount = true, show_motor = false) {
+    // ベースプレート
+    if (show_base) {
+        color("white")
+        difference() {
+            // 角丸プレート
+            hull() {
+                for (x = [5, base_w - 5], y = [5, base_d - 5]) {
+                    translate([x, y, 0])
+                        cylinder(h = base_h, r = 5, $fn = 24);
+                }
+            }
+
+            // 取付穴（4隅）- 中央基準でピッチ配置
+            for (dx = [-1, 1], dy = [-1, 1]) {
+                translate([base_w/2 + dx * mount_hole_pitch_x/2,
+                           base_d/2 + dy * mount_hole_pitch_y/2,
+                           -0.1])
+                    cylinder(h = base_h + 0.2, d = mount_hole_d, $fn = 24);
             }
         }
+    }
 
-        // 取付穴（4隅）- 中央基準でピッチ配置
-        for (dx = [-1, 1], dy = [-1, 1]) {
-            translate([base_w/2 + dx * mount_hole_pitch_x/2,
-                       base_d/2 + dy * mount_hole_pitch_y/2,
-                       -0.1])
-                cylinder(h = base_h + 0.2, d = mount_hole_d, $fn = 24);
-        }
+    // モーターマウント（横向き、端子が上、シャフトが -Y 方向）
+    if (show_mount) {
+        color("white")
+        translate([mount_x, mount_y, mount_z])
+            rotate([180, 0, 90])
+                mabuchi_motor_fa130_mount(wall = wall, base = base, tolerance = tolerance,
+                                           anchor = "motor");
+    }
+
+    // フィットチェック用モーター
+    if (show_motor) {
+        translate([mount_x, mount_y, mount_z])
+            rotate([180, 0, 90])
+                mabuchi_motor_fa130_in_mount(base = base);
     }
 }
 
-// モーターマウント（横向き、端子が上、シャフトが -Y 方向）
-// rotate([180, 0, 90]) でマウントを反転し、端子開口を上に、シャフトを Y 方向に
-if (show_mount) {
-    color("white")
-    translate([mount_x, mount_y, mount_z])
-        rotate([180, 0, 90])
-            mabuchi_motor_fa130_mount(wall = wall, base = base, tolerance = tolerance,
-                                       anchor = "motor");
-}
+// シャフト先端位置（インジケータ/カップラー配置用）
+shaft_tip_y = mount_y - (fa130_shaft_protrusion + fa130_bearing_holder_len);
 
-// フィットチェック用モーター（マウントと同じ変換）
-if (show_motor) {
-    translate([mount_x, mount_y, mount_z])
-        rotate([180, 0, 90])
-            mabuchi_motor_fa130_in_mount(base = base);
-}
+// ===== 単体表示（include 元でない場合）=====
 
-// カップラー
-if (show_coupler) {
-    // show_mount=true: 組み立て位置（シャフト先端）、false: 印刷用（Z=0）
-    // シャフトは -Y 方向に突出（マウントのシャフト側が Y=0 にあり、そこから -Y へ）
-    shaft_tip_y = mount_y - (fa130_shaft_protrusion + fa130_bearing_holder_len);
+if (is_undef(_fa130_mount_demo_included)) {
+    fa130_mount_unit(show_base, show_mount, show_motor);
 
-    color("orange")
-    if (show_mount) {
-        translate([mount_x, shaft_tip_y, mount_z])
-            rotate([90, 0, 0])
-                fa130_shaft_coupler(outer_d = coupler_outer_d, length = coupler_length,
-                                    with_slit = coupler_with_slit);
-    } else {
-        fa130_shaft_coupler(outer_d = coupler_outer_d, length = coupler_length,
-                            with_slit = coupler_with_slit);
+    // カップラー
+    if (show_coupler) {
+        color("orange")
+        if (show_mount) {
+            translate([mount_x, shaft_tip_y, mount_z])
+                rotate([90, 0, 0])
+                    fa130_shaft_coupler(outer_d = coupler_outer_d, length = coupler_length,
+                                        with_slit = coupler_with_slit);
+        } else {
+            fa130_shaft_coupler(outer_d = coupler_outer_d, length = coupler_length,
+                                with_slit = coupler_with_slit);
+        }
     }
 }
