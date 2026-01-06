@@ -57,7 +57,7 @@ mount_len = fa130_body_len + base;
 // ベース寸法
 base_w = 35;  // タミヤユニバーサルプレート対応
 base_d = mount_len + 4;  // マウント長 + 余裕
-base_h = 5;
+base_h = 2;
 
 // 取付穴（M3）- タミヤユニバーサルプレート 5mm ピッチ対応
 mount_hole_d = 3.4;  // M3 クリアランス
