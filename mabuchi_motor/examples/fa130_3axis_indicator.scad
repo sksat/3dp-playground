@@ -25,6 +25,7 @@ show_mounts = true;
 show_bases = true;
 show_indicators = true;
 show_bracket = true;
+show_labels = true;
 
 /* [インジケータ設定] */
 disc_d = 25;
@@ -37,6 +38,10 @@ spiral_turns = 2;
 /* [ブラケット設定] */
 bracket_wall = 4;
 bracket_fillet = 2;  // 外側エッジのフィレット半径
+
+/* [ラベル設定] */
+label_size = 15;      // フォントサイズ
+label_depth = 0.6;    // インレイ深さ
 
 // ===== 導出寸法 =====
 
@@ -61,6 +66,25 @@ indicator_offset = bracket_size - edge_margin - disc_h - shaft_protrusion_total;
 
 // 横方向のオフセット（中央と端の中間くらい）
 lateral_offset = (bracket_size - base_w) * 2 / 3;
+
+// ラベル位置
+// 外側ラベル: モーターマウント中心付近（ナット穴を避ける）
+// 内側ラベル: L字の外縁寄り（モーターを避け、視認性向上）
+
+// 外側ラベル位置（モーターマウント中心付近）
+// 回転後のベースプレート中心を考慮
+// X軸: rotate([0,0,90]) で local Y → global -X、base_d が -X 方向に延びる
+// Z軸: rotate([-90,0,0]) で local Y → global -Z
+// Y軸: rotate([0,90,0]) rotate([0,0,180]) で local Y → global -Y
+label_x_outer_pos = [indicator_offset - base_d/2, lateral_offset + base_w/2];
+label_z_outer_pos = [lateral_offset + base_w/2, indicator_offset - base_d/2];
+label_y_outer_pos = [indicator_offset - base_d/2, lateral_offset + base_w/2];
+
+// 内側ラベル位置（L字の外縁寄り、モーターを避ける）
+label_inner_margin = bracket_fillet + label_size/2 + 1;  // 端ギリギリに配置
+label_x_inner_pos = [bracket_size - label_inner_margin, bracket_size - label_inner_margin];
+label_z_inner_pos = [bracket_size - label_inner_margin, bracket_size - label_inner_margin];
+label_y_inner_pos = [bracket_size - label_inner_margin, bracket_size - label_inner_margin];
 
 // ===== インジケータモジュール =====
 
@@ -96,6 +120,116 @@ module indicator_spiral() {
     translate([0, 0, disc_h - spiral_depth])
         linear_extrude(height = spiral_depth)
             spiral_2d(r_inner, r_outer, spiral_w, spiral_turns);
+}
+
+// ===== 軸ラベルモジュール =====
+// 各面に配置する軸ラベル（インレイ用）
+
+// ラベル2D形状（中央揃え）
+module label_2d(txt) {
+    text(txt, size = label_size, font = "Liberation Sans:style=Bold",
+         halign = "center", valign = "center");
+}
+
+// 底面ラベル（Z=0、上から見る）: "X"
+module label_x_cutout() {
+    translate([label_x_outer_pos[0], label_x_outer_pos[1], -0.1])
+        linear_extrude(height = label_depth + 0.1)
+            label_2d("X");
+}
+
+module label_x_text() {
+    translate([label_x_outer_pos[0], label_x_outer_pos[1], 0])
+        linear_extrude(height = label_depth)
+            label_2d("X");
+}
+
+// 前面ラベル（Y=0、前から見る）: "Z"
+module label_z_cutout() {
+    translate([label_z_outer_pos[0], -0.1, label_z_outer_pos[1]])
+        rotate([-90, 0, 0])
+            linear_extrude(height = label_depth + 0.1)
+                mirror([1, 0, 0])
+                    label_2d("Z");
+}
+
+module label_z_text() {
+    translate([label_z_outer_pos[0], 0, label_z_outer_pos[1]])
+        rotate([-90, 0, 0])
+            linear_extrude(height = label_depth)
+                mirror([1, 0, 0])
+                    label_2d("Z");
+}
+
+// 側面ラベル（X=0、横から見る）: "Y"
+module label_y_cutout() {
+    translate([-0.1, label_y_outer_pos[0], label_y_outer_pos[1]])
+        rotate([0, 90, 0])
+            rotate([0, 0, 90])
+                linear_extrude(height = label_depth + 0.1)
+                    label_2d("Y");
+}
+
+module label_y_text() {
+    translate([0, label_y_outer_pos[0], label_y_outer_pos[1]])
+        rotate([0, 90, 0])
+            rotate([0, 0, 90])
+                linear_extrude(height = label_depth)
+                    label_2d("Y");
+}
+
+// ===== 内側ラベルモジュール =====
+// 各面の内側に配置する軸ラベル
+
+// 底面内側ラベル（Z=bracket_wall、下から見る）: "X"
+module label_x_inner_cutout() {
+    translate([label_x_inner_pos[0], label_x_inner_pos[1], bracket_wall - label_depth])
+        linear_extrude(height = label_depth + 0.1)
+            mirror([1, 0, 0])
+                label_2d("X");
+}
+
+module label_x_inner_text() {
+    translate([label_x_inner_pos[0], label_x_inner_pos[1], bracket_wall - label_depth])
+        linear_extrude(height = label_depth)
+            mirror([1, 0, 0])
+                label_2d("X");
+}
+
+// 前面内側ラベル（Y=bracket_wall、後ろから見る）: "Z"
+// 外側と逆方向から見るため mirror 不要
+module label_z_inner_cutout() {
+    translate([label_z_inner_pos[0], bracket_wall - label_depth, label_z_inner_pos[1]])
+        rotate([-90, 0, 0])
+            linear_extrude(height = label_depth + 0.1)
+                label_2d("Z");
+}
+
+module label_z_inner_text() {
+    translate([label_z_inner_pos[0], bracket_wall - label_depth, label_z_inner_pos[1]])
+        rotate([-90, 0, 0])
+            linear_extrude(height = label_depth)
+                label_2d("Z");
+}
+
+// 側面内側ラベル（X=bracket_wall、反対側から見る）: "Y"
+// mirror([1, 0, 0]) で左右反転（上下ではなく）
+module label_y_inner_cutout() {
+    translate([bracket_wall - label_depth, label_y_inner_pos[0], label_y_inner_pos[1]])
+        rotate([0, 90, 0])
+            rotate([0, 0, 90])
+                linear_extrude(height = label_depth + 0.1)
+                    mirror([1, 0, 0])
+                        label_2d("Y");
+}
+
+module label_y_inner_text() {
+    translate([bracket_wall - label_depth, label_y_inner_pos[0], label_y_inner_pos[1]])
+        rotate([0, 90, 0])
+            rotate([0, 0, 90])
+                linear_extrude(height = label_depth)
+                    mirror([1, 0, 0])
+                        label_2d("Y");
 }
 
 // ===== マウント+インジケータユニット =====
@@ -220,6 +354,20 @@ module l_bracket() {
         translate([-0.1, bracket_wall, bracket_wall])
             rotate([0, 90, 0])
                 cylinder(h = harness_fillet_r + 0.1, r1 = harness_hole_d/2 + harness_fillet_r, r2 = harness_hole_d/2, $fn = 48);
+
+        // 軸ラベルのカットアウト（外側）
+        if (show_labels) {
+            label_x_cutout();
+            label_y_cutout();
+            label_z_cutout();
+        }
+
+        // 軸ラベルのカットアウト（内側）
+        if (show_labels) {
+            label_x_inner_cutout();
+            label_y_inner_cutout();
+            label_z_inner_cutout();
+        }
     }
 }
 
@@ -227,6 +375,24 @@ module l_bracket() {
 
 if (show_bracket) {
     color("white") l_bracket();
+}
+
+// 軸ラベル（黒）- 外側
+if (show_labels) {
+    color("black") {
+        label_x_text();
+        label_y_text();
+        label_z_text();
+    }
+}
+
+// 軸ラベル（黒）- 内側
+if (show_labels) {
+    color("black") {
+        label_x_inner_text();
+        label_y_inner_text();
+        label_z_inner_text();
+    }
 }
 
 // X軸モーター: XY平面（底面）に配置、シャフトは +X 方向
