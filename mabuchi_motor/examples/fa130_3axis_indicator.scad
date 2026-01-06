@@ -22,6 +22,7 @@ include <fa130_mount_demo.scad>
 /* [表示設定] */
 show_motors = false;
 show_mounts = true;
+show_bases = true;
 show_indicators = true;
 show_bracket = true;
 
@@ -103,7 +104,7 @@ module indicator_spiral() {
 
 module mount_with_indicator() {
     // マウントユニット（fa130_mount_demo.scad から）
-    fa130_mount_unit(show_base = true, show_mount = show_mounts, show_motor = show_motors);
+    fa130_mount_unit(show_base = show_bases, show_mount = show_mounts, show_motor = show_motors);
 
     // インジケータ（シャフト先端、-Y 方向）
     if (show_indicators) {
@@ -190,8 +191,9 @@ module l_bracket() {
 
         // 側面の穴（Y軸モーター用）
         // モーターと同じ transform を使用: translate + rotate([0, 90, 0]) rotate([0, 0, 180])
+        // rotate([0, 90, 0]) で cylinder は +X 方向に伸びる
         translate([-0.1, indicator_offset, lateral_offset])
-            rotate([0, -90, 0])
+            rotate([0, 90, 0])
                 rotate([0, 0, 180])
                     for (pos = hole_positions)
                         translate([pos[0], pos[1], 0])
