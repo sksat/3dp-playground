@@ -6,6 +6,17 @@
 //
 // 各ベースプレート4本、計12本のM3ネジで固定
 //
+// インジケータパターン:
+//   - radial: 放射状ストライプ（デフォルト、最も視認性が高い）
+//   - sector: セクターパターン（白黒交互、ストロボ効果）
+//   - arrow: 矢印パターン（回転方向識別可能）
+//   - spiral: 螺旋パターン（既存、後方互換性）
+//
+// 推奨設定:
+//   - 低速（< 500 RPM）: pattern_type="arrow", mark_count=6-8
+//   - 中速（500-2000 RPM）: pattern_type="radial", mark_count=12（デフォルト）
+//   - 高速（> 2000 RPM）: pattern_type="sector", mark_count=16-24
+//
 // 使用モーター: FA-130 x3
 // 使用ネジ: M3x8 x12（タミヤユニバーサルプレート対応穴ピッチ）
 //
@@ -16,6 +27,9 @@
 // fa130_mount_demo.scad を include（モジュールと寸法を使用）
 _fa130_mount_demo_included = true;
 include <fa130_mount_demo.scad>
+
+// fa130_indicator_demo.scad から インジケータモジュールを使用
+use <fa130_indicator_demo.scad>
 
 // ===== Customizer パラメータ =====
 
@@ -28,12 +42,27 @@ show_bracket = true;
 show_labels = true;
 
 /* [インジケータ設定] */
-disc_d = 25;
+disc_d = 22;  // インジケータディスク直径
 disc_h = 3;
 shaft_tolerance = 0.2;
+
+// パターン選択（デフォルト: radial = 最も視認性が高い）
+pattern_type = "radial"; // ["radial":放射状ストライプ, "sector":セクターパターン, "arrow":矢印パターン, "spiral":螺旋]
+
+// パターンパラメータ（radial, sector, arrow用）
+mark_count = 12; // [6:1:24]
+mark_width_ratio = 0.4; // [0.2:0.05:0.8]
+
+// 矢印パターン用
+arrow_size_ratio = 0.3; // [0.2:0.05:0.5]
+
+// 既存スパイラルパラメータ（後方互換性）
 spiral_w = 1.5;
 spiral_depth = 0.6;
 spiral_turns = 2;
+
+// 共通: パターン深さ
+pattern_depth = 0.6; // [0.4:0.1:1.0]
 
 /* [ブラケット設定] */
 bracket_wall = 4;
