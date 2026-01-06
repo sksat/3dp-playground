@@ -67,6 +67,7 @@ pattern_depth = 0.6; // [0.4:0.1:1.0]
 /* [ブラケット設定] */
 bracket_wall = 4;
 bracket_fillet = 2;  // 外側エッジのフィレット半径
+extra_margin = 0;  // [0:1:10] ベースプレート後端からブラケット端までの余裕
 
 /* [ラベル設定] */
 label_size = 15;      // フォントサイズ
@@ -74,9 +75,21 @@ label_depth = 0.6;    // インレイ深さ
 
 // ===== 導出寸法 =====
 
-// L字ブラケットサイズ（モーター+インジケータが内側に収まるサイズ）
+// コーナーからの配置オフセット（端からの余裕）
+edge_margin = 1;  // インジケータ先端から端までの余裕
+
+// シャフト突出量（全モーター共通）
 shaft_protrusion_total = fa130_shaft_protrusion + fa130_bearing_holder_len;
-bracket_size = base_d + shaft_protrusion_total + disc_d + 15;
+
+// モーター配置位置（各軸共通、コーナーからのオフセット）
+// 計算根拠: 元の bracket_size - edge_margin - disc_h - shaft_protrusion_total
+//         = (base_d + shaft_protrusion_total + disc_d + 15) - edge_margin - disc_h - shaft_protrusion_total
+//         = base_d + disc_d + 15 - edge_margin - disc_h
+indicator_offset = base_d + disc_d + 15 - edge_margin - disc_h;
+
+// L字ブラケットサイズ（モーター位置 + 余裕）
+// 注: インジケータディスクは bracket_size を超えて突き出る
+bracket_size = indicator_offset + extra_margin;
 
 // M3ナット
 m3_nut_width = 5.5;      // 対辺寸法（実寸）
@@ -85,13 +98,6 @@ m3_nut_pocket_depth = 3;
 
 // ハーネス穴（L字中心部）
 harness_hole_d = 40;  // ハーネス穴直径
-
-// コーナーからの配置オフセット（端からの余裕）
-edge_margin = 1;  // インジケータ先端から端までの余裕
-
-// インジケータを端に配置するためのオフセット
-// インジケータ先端が bracket_size - edge_margin に来るように計算
-indicator_offset = bracket_size - edge_margin - disc_h - shaft_protrusion_total;
 
 // 横方向のオフセット（中央と端の中間くらい）
 lateral_offset = (bracket_size - base_w) * 2 / 3;
@@ -110,10 +116,11 @@ label_z_outer_pos = [lateral_offset + base_w/2, indicator_offset - base_d/2];
 label_y_outer_pos = [indicator_offset - base_d/2, lateral_offset + base_w/2];
 
 // 内側ラベル位置（L字の外縁寄り、モーターを避ける）
-label_inner_margin = bracket_fillet + label_size/2 + 1;  // 端ギリギリに配置
-label_x_inner_pos = [bracket_size - label_inner_margin, bracket_size - label_inner_margin];
-label_z_inner_pos = [bracket_size - label_inner_margin, bracket_size - label_inner_margin];
-label_y_inner_pos = [bracket_size - label_inner_margin, bracket_size - label_inner_margin];
+// 注: ブラケット縮小により内側ラベルは配置困難なためコメントアウト
+// label_inner_margin = bracket_fillet + label_size/2 + 1;  // 端ギリギリに配置
+// label_x_inner_pos = [bracket_size - label_inner_margin, bracket_size - label_inner_margin];
+// label_z_inner_pos = [bracket_size - label_inner_margin, bracket_size - label_inner_margin];
+// label_y_inner_pos = [bracket_size - label_inner_margin, bracket_size - label_inner_margin];
 
 // ===== インジケータモジュール =====
 
@@ -392,11 +399,12 @@ module l_bracket() {
         }
 
         // 軸ラベルのカットアウト（内側）
-        if (show_labels) {
-            label_x_inner_cutout();
-            label_y_inner_cutout();
-            label_z_inner_cutout();
-        }
+        // 注: ブラケット縮小により内側ラベルは配置困難なためコメントアウト
+        // if (show_labels) {
+        //     label_x_inner_cutout();
+        //     label_y_inner_cutout();
+        //     label_z_inner_cutout();
+        // }
     }
 }
 
@@ -416,13 +424,14 @@ if (show_labels) {
 }
 
 // 軸ラベル（黒）- 内側
-if (show_labels) {
-    color("black") {
-        label_x_inner_text();
-        label_y_inner_text();
-        label_z_inner_text();
-    }
-}
+// 注: ブラケット縮小により内側ラベルは配置困難なためコメントアウト
+// if (show_labels) {
+//     color("black") {
+//         label_x_inner_text();
+//         label_y_inner_text();
+//         label_z_inner_text();
+//     }
+// }
 
 // X軸モーター: XY平面（底面）に配置、シャフトは +X 方向
 // インジケータが +X 端、横方向（Y）は端寄り
