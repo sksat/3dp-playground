@@ -988,3 +988,75 @@ module motor_in_mount(base = 3) {
 **確認方法:**
 - 半透明（`%`）でマウントを表示し、モーターとの隙間を確認
 - Z-fighting が見えたら位置計算を見直す
+
+### Retention Clip Design (リテンションクリップ・爪の設計)
+
+はめ込み式マウントの爪（カエシ）を設計する際の注意点:
+
+**1. 爪先端の厚さを確保する**
+
+爪先端が薄すぎると強度不足になる:
+```openscad
+// 悪い例: 先端が 0.1mm で細すぎる
+cube([0.1, tab_depth, clip_width]);
+
+// 良い例: 先端を 1mm 以上確保
+cube([tab_tip, tab_depth, clip_width]);  // tab_tip = 1.0
+```
+
+**2. 爪の角度パラメータで挿入しやすさを調整**
+
+爪先端を +X 方向（挿入口側）にオフセットすることで、パーツ挿入時に爪が開きやすくなる:
+```openscad
+// tab_angle で先端位置を調整
+translate([mount_len + clip_length - tab_tip + tab_angle, ...])
+    cube([tab_tip, tab_depth, clip_width]);
+```
+- `tab_angle = 2〜4mm` 程度が目安
+- 大きすぎると保持力が弱くなる
+
+**3. 爪の根元を適切に接続する**
+
+爪の根元は外周（outer_d）に合わせ、X始点はケース終点に合わせる:
+```openscad
+// 爪根元のY位置を外周に合わせる
+tab_base_y = dy * outer_d/2;
+
+// X始点をケース終点（mount_len）に合わせる
+hull() {
+    translate([mount_len - 0.1, tab_base_y + ..., -clip_width/2])
+        cube([0.1, arm_thickness, clip_width]);
+    // 爪先端...
+}
+```
+
+**4. flex_wall で根元の壁厚を調整**
+
+スリットで挟まれた部分を内側から削ることで、爪の根元が曲げやすくなる:
+```openscad
+// flex_wall: スリット間の壁厚（wall より小さい値）
+// 内側から (wall - flex_wall) 分削る
+if (flex_wall > 0 && flex_wall < wall) {
+    flex_cut_depth = wall - flex_wall;
+    // 内側から円弧状に削る
+}
+```
+
+**5. 内側から削る際の Z-fighting 対策**
+
+内側から削るカットアウトは、隣接面と 0.1〜0.2mm オーバーラップさせる:
+```openscad
+// 内側の円は 0.2mm 小さく（オーバーラップ）
+difference() {
+    circle(d = inner_d + flex_cut_depth * 2);
+    circle(d = inner_d - 0.2);  // ← オーバーラップ
+}
+
+// スリット方向（Z方向）にもオーバーラップ
+square([clip_width + 0.2, ...]);  // ← 0.2mm 広げる
+```
+
+**パラメータ設計の指針:**
+- 調整可能な箇所は個別パラメータ化する
+- デフォルト値は印刷テスト後に調整
+- 複数パラメータの相互作用を考慮（例: tab_angle と tab_depth）
