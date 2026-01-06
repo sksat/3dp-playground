@@ -55,13 +55,14 @@ mount_outer_h = fa130_housing_h + tolerance + wall * 2;
 mount_len = fa130_body_len + base;
 
 // ベース寸法
-base_w = 40;
+base_w = 35;  // タミヤユニバーサルプレート対応
 base_d = mount_len + 4;  // マウント長 + 余裕
 base_h = 5;
 
-// 取付穴（M3）
+// 取付穴（M3）- タミヤユニバーサルプレート 5mm ピッチ対応
 mount_hole_d = 3.4;  // M3 クリアランス
-mount_hole_inset = 4;  // 端からの距離
+mount_hole_pitch_x = 30;  // X方向ピッチ (5mm x 6)
+mount_hole_pitch_y = 25;  // Y方向ピッチ (5mm x 5)
 
 // ===== 組み立て =====
 
@@ -84,10 +85,11 @@ if (show_base) {
             }
         }
 
-        // 取付穴（4隅）
-        for (x = [mount_hole_inset, base_w - mount_hole_inset],
-             y = [mount_hole_inset, base_d - mount_hole_inset]) {
-            translate([x, y, -0.1])
+        // 取付穴（4隅）- 中央基準でピッチ配置
+        for (dx = [-1, 1], dy = [-1, 1]) {
+            translate([base_w/2 + dx * mount_hole_pitch_x/2,
+                       base_d/2 + dy * mount_hole_pitch_y/2,
+                       -0.1])
                 cylinder(h = base_h + 0.2, d = mount_hole_d, $fn = 24);
         }
     }

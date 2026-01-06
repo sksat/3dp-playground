@@ -227,12 +227,14 @@ module mabuchi_motor_fa130_cutout(depth = undef, tolerance = default_tolerance) 
 //   tab_tip: 爪先端の厚さ（X方向）
 //   tab_angle: 爪の傾き（+X方向へのオフセット、大きいほど外向き）
 //   arm_thickness: アームの厚さ（薄いほど曲げやすい）
+//   flex_wall: スリット間の壁厚（薄いほど曲げやすい、0で通常wall厚）
 module mabuchi_motor_fa130_mount(wall = 2, base = 3, tolerance = default_tolerance,
                                   anchor = "motor", retention = true,
                                   clip_length = 1, clip_width = 5,
                                   slit_width = 1.5, tab_depth = 1.2,
                                   tab_thickness = 2, tab_tip = 1.0,
-                                  tab_angle = 4, arm_thickness = 1) {
+                                  tab_angle = 2, arm_thickness = 1,
+                                  flex_wall = 1) {
     // マウント外形（D形状）
     outer_d = fa130_housing_d + tolerance + wall * 2;
     outer_h = fa130_housing_h + tolerance + wall * 2;
@@ -338,6 +340,24 @@ module mabuchi_motor_fa130_mount(wall = 2, base = 3, tolerance = default_toleran
                         translate([mount_len - slit_depth, -20, slit_z - slit_width/2])
                             //rotate([180, 0, 0])
                             cube([slit_depth + clip_length, 40, slit_width]);
+                    }
+
+                    // スリット間の壁を内側から削る（flex_wall で厚み調整）
+                    if (flex_wall > 0 && flex_wall < wall) {
+                        flex_cut_depth = wall - flex_wall;  // 削る深さ
+                        translate([mount_len - slit_depth - 0.1, 0, 0])
+                            rotate([0, 90, 0])
+                                linear_extrude(slit_depth + 0.2)
+                                    intersection() {
+                                        // 内側から削る円弧（0.1mm オーバーラップで Z-fighting 回避）
+                                        difference() {
+                                            circle(d = inner_d + flex_cut_depth * 2, $fn = 48);
+                                            circle(d = inner_d - 0.2, $fn = 48);
+                                        }
+                                        // スリット間の部分のみ（Z方向にも 0.2mm オーバーラップ）
+                                        translate([0, dy * (inner_d/2 + flex_cut_depth/2)])
+                                            square([clip_width + 0.2, flex_cut_depth * 2], center = true);
+                                    }
                     }
                 }
             }
