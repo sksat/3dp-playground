@@ -35,6 +35,7 @@ spiral_turns = 2;
 
 /* [ブラケット設定] */
 bracket_wall = 4;
+bracket_fillet = 2;  // 外側エッジのフィレット半径
 
 // ===== 導出寸法 =====
 
@@ -43,11 +44,22 @@ shaft_protrusion_total = fa130_shaft_protrusion + fa130_bearing_holder_len;
 bracket_size = base_d + shaft_protrusion_total + disc_d + 15;
 
 // M3ナット
-m3_nut_width = 5.5;
+m3_nut_width = 5.5;      // 対辺寸法（実寸）
+m3_nut_clearance = 0.4;  // PLA 3DP 用クリアランス
 m3_nut_pocket_depth = 3;
 
-// コーナーからの配置オフセット
-offset = 5;
+// ハーネス穴（L字中心部）
+harness_hole_d = 40;  // ハーネス穴直径
+
+// コーナーからの配置オフセット（端からの余裕）
+edge_margin = 1;  // インジケータ先端から端までの余裕
+
+// インジケータを端に配置するためのオフセット
+// インジケータ先端が bracket_size - edge_margin に来るように計算
+indicator_offset = bracket_size - edge_margin - disc_h - shaft_protrusion_total;
+
+// 横方向のオフセット（中央と端の中間くらい）
+lateral_offset = (bracket_size - base_w) * 2 / 3;
 
 // ===== インジケータモジュール =====
 
@@ -106,46 +118,106 @@ module mount_with_indicator() {
 // ===== L字ブラケット =====
 
 module m3_nut_2d() {
-    circle(d = m3_nut_width / cos(30), $fn = 6);
+    // 対辺寸法 + クリアランスから対角寸法を計算
+    circle(d = (m3_nut_width + m3_nut_clearance) / cos(30), $fn = 6);
 }
 
 module l_bracket() {
-    // 穴位置（中央基準でピッチ配置）
+    // 穴位置（ベースプレートローカル座標、中央基準でピッチ配置）
     hole_positions = [
         for (dx = [-1, 1], dy = [-1, 1])
             [base_w/2 + dx * mount_hole_pitch_x/2,
              base_d/2 + dy * mount_hole_pitch_y/2]
     ];
 
+    // 穴とナットポケット
+    module hole_with_nut() {
+        cylinder(h = bracket_wall + 0.2, d = mount_hole_d, $fn = 24);
+        linear_extrude(height = m3_nut_pocket_depth) m3_nut_2d();
+    }
+
+    // 角丸の板（XY平面）
+    module rounded_plate_xy(size_x, size_y, thickness, r) {
+        hull() {
+            for (x = [r, size_x - r], y = [r, size_y - r])
+                translate([x, y, 0])
+                    cylinder(h = thickness, r = r, $fn = 24);
+        }
+    }
+
+    // 角丸の板（XZ平面）
+    module rounded_plate_xz(size_x, size_z, thickness, r) {
+        hull() {
+            for (x = [r, size_x - r], z = [r, size_z - r])
+                translate([x, 0, z])
+                    rotate([-90, 0, 0])
+                        cylinder(h = thickness, r = r, $fn = 24);
+        }
+    }
+
+    // 角丸の板（YZ平面）
+    module rounded_plate_yz(size_y, size_z, thickness, r) {
+        hull() {
+            for (y = [r, size_y - r], z = [r, size_z - r])
+                translate([0, y, z])
+                    rotate([0, 90, 0])
+                        cylinder(h = thickness, r = r, $fn = 24);
+        }
+    }
+
     difference() {
         union() {
-            cube([bracket_size, bracket_size, bracket_wall]);           // 底面
-            cube([bracket_size, bracket_wall, bracket_size]);           // 前面
-            cube([bracket_wall, bracket_size, bracket_size]);           // 側面
+            rounded_plate_xy(bracket_size, bracket_size, bracket_wall, bracket_fillet);  // 底面
+            rounded_plate_xz(bracket_size, bracket_size, bracket_wall, bracket_fillet);  // 前面
+            rounded_plate_yz(bracket_size, bracket_size, bracket_wall, bracket_fillet);  // 側面
         }
 
-        // 底面の穴（Y軸用）
-        for (pos = hole_positions)
-            translate([offset + pos[0], offset + pos[1], -0.1]) {
-                cylinder(h = bracket_wall + 0.2, d = mount_hole_d, $fn = 24);
-                linear_extrude(height = m3_nut_pocket_depth) m3_nut_2d();
+        // 底面の穴（X軸モーター用）
+        // モーターと同じ transform を使用: translate + rotate([0, 0, 90])
+        translate([indicator_offset, lateral_offset, -0.1])
+            rotate([0, 0, 90])
+                for (pos = hole_positions)
+                    translate([pos[0], pos[1], 0])
+                        hole_with_nut();
+
+        // 前面の穴（Z軸モーター用）
+        // モーターと同じ transform を使用: translate + rotate([-90, 0, 0])
+        translate([lateral_offset, -0.1, indicator_offset])
+            rotate([-90, 0, 0])
+                for (pos = hole_positions)
+                    translate([pos[0], pos[1], 0])
+                        hole_with_nut();
+
+        // 側面の穴（Y軸モーター用）
+        // モーターと同じ transform を使用: translate + rotate([0, 90, 0]) rotate([0, 0, 180])
+        translate([-0.1, indicator_offset, lateral_offset])
+            rotate([0, -90, 0])
+                rotate([0, 0, 180])
+                    for (pos = hole_positions)
+                        translate([pos[0], pos[1], 0])
+                            hole_with_nut();
+
+        // ハーネス穴（L字の角を貫通）
+        // 角の内側から斜めに貫通する穴（フィレット付き）
+        translate([bracket_wall, bracket_wall, bracket_wall])
+            minkowski() {
+                sphere(d = harness_hole_d - bracket_fillet * 2, $fn = 32);
+                sphere(r = bracket_fillet, $fn = 16);
             }
 
-        // 前面の穴（Z軸用）
-        for (pos = hole_positions)
-            translate([offset + pos[0], -0.1, offset + pos[1]])
-                rotate([-90, 0, 0]) {
-                    cylinder(h = bracket_wall + 0.2, d = mount_hole_d, $fn = 24);
-                    linear_extrude(height = m3_nut_pocket_depth) m3_nut_2d();
-                }
-
-        // 側面の穴（X軸用）
-        for (pos = hole_positions)
-            translate([-0.1, offset + pos[1], offset + pos[0]])
-                rotate([0, 90, 0]) {
-                    cylinder(h = bracket_wall + 0.2, d = mount_hole_d, $fn = 24);
-                    linear_extrude(height = m3_nut_pocket_depth) m3_nut_2d();
-                }
+        // 穴入り口のフィレット（各面）
+        harness_fillet_r = 3;  // 穴入り口のフィレット半径
+        // 底面（Z=0）
+        translate([bracket_wall, bracket_wall, -0.1])
+            cylinder(h = harness_fillet_r + 0.1, r1 = harness_hole_d/2 + harness_fillet_r, r2 = harness_hole_d/2, $fn = 48);
+        // 前面（Y=0）
+        translate([bracket_wall, -0.1, bracket_wall])
+            rotate([-90, 0, 0])
+                cylinder(h = harness_fillet_r + 0.1, r1 = harness_hole_d/2 + harness_fillet_r, r2 = harness_hole_d/2, $fn = 48);
+        // 側面（X=0）
+        translate([-0.1, bracket_wall, bracket_wall])
+            rotate([0, 90, 0])
+                cylinder(h = harness_fillet_r + 0.1, r1 = harness_hole_d/2 + harness_fillet_r, r2 = harness_hole_d/2, $fn = 48);
     }
 }
 
@@ -156,24 +228,20 @@ if (show_bracket) {
 }
 
 // X軸モーター: XY平面（底面）に配置、シャフトは +X 方向
-// ベースの底面が Z = bracket_wall（底面壁の上面）に接触
-// rotate([0, 0, 90]) で -Y → +X、ベース範囲 X[-base_d,0] Y[0,base_w]
-translate([offset + base_d, offset, bracket_wall])
+// インジケータが +X 端、横方向（Y）は端寄り
+translate([indicator_offset, lateral_offset, bracket_wall])
     rotate([0, 0, 90])
         mount_with_indicator();
 
 // Y軸モーター: YZ平面（側面）に配置、シャフトは +Y 方向
-// rotate([0, 90, 0]) rotate([0, 0, 180]) で:
-//   シャフト -Y → +Y、ベース法線 +Z → -X（ベース裏面が側面壁に接触）
-//   ベース範囲: X[0,base_h], Y[-base_d,0], Z[0,base_w]
-translate([bracket_wall, offset + base_d, offset])
+// インジケータが +Y 端、横方向（Z）は端寄り
+translate([bracket_wall, indicator_offset, lateral_offset])
     rotate([0, 90, 0])
         rotate([0, 0, 180])
             mount_with_indicator();
 
 // Z軸モーター: XZ平面（前面）に配置、シャフトは +Z 方向
-// ベースの底面が Y = bracket_wall（前面壁の内側面）に接触
-// rotate([-90, 0, 0]) でベース範囲 X[0,base_w] Y[0,base_h] Z[-base_d,0]
-translate([offset, bracket_wall, offset + base_d])
+// インジケータが +Z 端、横方向（X）は端寄り
+translate([lateral_offset, bracket_wall, indicator_offset])
     rotate([-90, 0, 0])
         mount_with_indicator();
