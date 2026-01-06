@@ -224,12 +224,15 @@ module mabuchi_motor_fa130_cutout(depth = undef, tolerance = default_tolerance) 
 //   slit_width: アームを分離するスリット幅
 //   tab_depth: 爪の掛かり深さ（内側への突出量）
 //   tab_thickness: 爪の厚さ
+//   tab_tip: 爪先端の厚さ（X方向）
+//   tab_angle: 爪の傾き（+X方向へのオフセット、大きいほど外向き）
 //   arm_thickness: アームの厚さ（薄いほど曲げやすい）
 module mabuchi_motor_fa130_mount(wall = 2, base = 3, tolerance = default_tolerance,
                                   anchor = "motor", retention = true,
                                   clip_length = 1, clip_width = 5,
-                                  slit_width = 1.5, tab_depth = 1.7,
-                                  tab_thickness = 3, arm_thickness = 1) {
+                                  slit_width = 1.5, tab_depth = 1.2,
+                                  tab_thickness = 2, tab_tip = 1.0,
+                                  tab_angle = 4, arm_thickness = 1) {
     // マウント外形（D形状）
     outer_d = fa130_housing_d + tolerance + wall * 2;
     outer_h = fa130_housing_h + tolerance + wall * 2;
@@ -298,7 +301,10 @@ module mabuchi_motor_fa130_mount(wall = 2, base = 3, tolerance = default_toleran
 
                         // 爪（アームから爪先端まで滑らかに繋ぐ）
                         // hull() でアーム先端の円弧断面と爪先端を接続
-                        tab_inner_y = dy * (inner_d/2 - tab_depth);  // 爪の内側面
+                        tab_inner_y = dy * (inner_d/2 - tab_depth);  // 爪の内側面のY位置
+
+                        // 爪本体
+                        // tab_angle で爪先端を +X 方向にオフセット（傾きを調整）
                         hull() {
                             // アーム先端の断面（薄いスライス）
                             translate([mount_len + arm_len - 0.1, 0, 0])
@@ -312,9 +318,12 @@ module mabuchi_motor_fa130_mount(wall = 2, base = 3, tolerance = default_toleran
                                             translate([0, dy * (arm_inner_d/2 + arm_thickness/2)])
                                                 square([clip_width, arm_thickness * 2], center = true);
                                         }
-                            // 爪先端（直方体）
-                            translate([mount_len + clip_length - 0.1, tab_inner_y + (dy < 0 ? 0 : -tab_depth), -clip_width/2])
-                                cube([0.1, tab_depth, clip_width]);
+                            // 爪先端（tab_tip 厚の直方体）
+                            // tab_angle 分 +X 方向にオフセット
+                            translate([mount_len + clip_length - tab_tip + tab_angle,
+                                       tab_inner_y + (dy < 0 ? 0 : -tab_depth),
+                                       -clip_width/2])
+                                cube([tab_tip, tab_depth, clip_width]);
                         }
                     }
                 }
@@ -350,11 +359,13 @@ module fa130_motor() { mabuchi_motor_fa130(); }
 module fa130_mount(wall = 2, base = 3, tolerance = default_tolerance,
                    anchor = "motor", retention = true,
                    clip_length = 2, clip_width = 6,
-                   slit_width = 1.5, tab_depth = 1.5,
-                   tab_thickness = 1.5, arm_thickness = 1.2) {
+                   slit_width = 1.5, tab_depth = 1.2,
+                   tab_thickness = 2, tab_tip = 1.0,
+                   tab_angle = 4, arm_thickness = 1.2) {
     mabuchi_motor_fa130_mount(wall, base, tolerance, anchor, retention,
                                clip_length, clip_width, slit_width,
-                               tab_depth, tab_thickness, arm_thickness);
+                               tab_depth, tab_thickness, tab_tip,
+                               tab_angle, arm_thickness);
 }
 module fa130_motor_in_mount(base = 3) { mabuchi_motor_fa130_in_mount(base); }
 module fa130_mount_cutout(depth = undef, tolerance = default_tolerance) {
