@@ -19,6 +19,7 @@ j_hook_cone_h = 1.5;         // 円錐高さ
 j_hook_cone_top_d = 2;       // 円錐上面直径
 j_hook_needle_d = 3;         // 針出口直径
 j_hook_needle_h = 1;         // 針出口高さ（突出量）
+j_hook_cover_thickness = 1;  // 純正カバーの厚さ
 
 /* 公差 */
 // 3Dプリント公差: 水平面 0.3mm、垂直面 0.4-0.5mm 推奨
@@ -52,23 +53,47 @@ module magic_cross_8_j_hook() {
     }
 }
 
+// Jフック + カバー モデル（フィットチェック用）
+//
+// カバーは本体と円錐を覆う（厚さ1mm）
+module magic_cross_8_j_hook_with_cover() {
+    // フック本体
+    magic_cross_8_j_hook();
+
+    // カバー（本体と円錐を覆う円筒）
+    cover_d = j_hook_body_d + j_hook_cover_thickness * 2;
+    cover_h = j_hook_body_h + j_hook_cone_h;
+    color("White")
+        difference() {
+            cylinder(h = cover_h, d = cover_d, $fn = 48);
+            // 内側をくり抜き（フック本体が入る）
+            translate([0, 0, -0.1])
+                cylinder(h = cover_h + 0.2, d = j_hook_body_d, $fn = 48);
+        }
+}
+
 // Jフック用穴（取り付け穴）
 //
 // 原点: 壁表面（Z=0）、穴はZ-方向に掘られる
 // body_depth: 本体埋め込み深さ（デフォルトは本体高さ）
 // wall_thickness: 壁厚（針穴の貫通用）
+// cover_thickness: カバー厚（0=カバーなし、1=純正カバー）
 //
 // 構造:
-//   壁表面 → 本体用凹み(8mm) → 針用穴(3mm) → 壁裏面
+//   壁表面 → 本体用凹み(8mm or 10mm) → 針用穴(3mm) → 壁裏面
 module magic_cross_8_j_hook_hole(
     tolerance = default_tolerance,
     body_depth = j_hook_body_h,
-    wall_thickness = 5
+    wall_thickness = 5,
+    cover_thickness = 0
 ) {
+    // 凹みの直径（カバー厚を考慮）
+    recess_d = j_hook_body_d + cover_thickness * 2 + tolerance * 2;
+
     // 本体埋め込み用凹み
     translate([0, 0, -body_depth - 0.1])
         cylinder(h = body_depth + 0.2,
-                 d = j_hook_body_d + tolerance * 2,
+                 d = recess_d,
                  $fn = 48);
 
     // 針出口用貫通穴
@@ -79,4 +104,7 @@ module magic_cross_8_j_hook_hole(
 }
 
 // スタンドアロン実行時のプレビュー
-magic_cross_8_j_hook();
+// show_wall が未定義 = 単体で開いている
+if (is_undef(show_wall)) {
+    magic_cross_8_j_hook();
+}

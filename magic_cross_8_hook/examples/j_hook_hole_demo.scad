@@ -8,7 +8,7 @@
 // ビルド:
 //   openscad -o j_hook_hole_demo.stl j_hook_hole_demo.scad
 
-use <../magic_cross_8_hook.scad>
+include <../magic_cross_8_hook.scad>
 
 /* [表示設定] */
 show_wall = true;
@@ -25,6 +25,8 @@ wall_thickness = 4;     // [4:0.5:10]
 hole_tolerance = 0.4;   // [0.2:0.05:0.6]
 // 本体埋め込み深さ（フック本体高さ3mm）
 body_depth = 3;         // [1:0.5:5]
+// 純正カバーを使用する場合はtrue
+use_cover = false;
 
 /* 実装 */
 
@@ -40,7 +42,8 @@ module sample_wall() {
             magic_cross_8_j_hook_hole(
                 tolerance = hole_tolerance,
                 body_depth = body_depth,
-                wall_thickness = wall_thickness
+                wall_thickness = wall_thickness,
+                cover_thickness = use_cover ? j_hook_cover_thickness : 0
             );
     }
 }
@@ -56,5 +59,8 @@ if (show_hook) {
     // フック原点は本体底面、凹みの底に配置
     // 本体は凹みに収まり、針出口は貫通穴を通って実際の壁へ
     translate([0, 0, wall_thickness - body_depth])
-        magic_cross_8_j_hook();
+        if (use_cover)
+            magic_cross_8_j_hook_with_cover();
+        else
+            magic_cross_8_j_hook();
 }
