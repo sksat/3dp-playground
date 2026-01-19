@@ -42,12 +42,26 @@ module magic_cross_8_j_hook() {
 
 // Jフック用穴（取り付け穴）
 //
-// 原点: 穴の開始位置（壁表面）
-// depth: 穴の深さ（壁厚以上を指定）
-module magic_cross_8_j_hook_hole(tolerance = default_tolerance, depth = 5) {
-    // 針出口用の穴
-    translate([0, 0, -0.1])
-        cylinder(h = depth + 0.2,
+// 原点: 壁表面（Z=0）、穴はZ-方向に掘られる
+// body_depth: 本体埋め込み深さ（デフォルトは本体高さ）
+// wall_thickness: 壁厚（針穴の貫通用）
+//
+// 構造:
+//   壁表面 → 本体用凹み(8mm) → 針用穴(3mm) → 壁裏面
+module magic_cross_8_j_hook_hole(
+    tolerance = default_tolerance,
+    body_depth = j_hook_body_h,
+    wall_thickness = 5
+) {
+    // 本体埋め込み用凹み
+    translate([0, 0, -body_depth - 0.1])
+        cylinder(h = body_depth + 0.2,
+                 d = j_hook_body_d + tolerance * 2,
+                 $fn = 48);
+
+    // 針出口用貫通穴
+    translate([0, 0, -wall_thickness - 0.1])
+        cylinder(h = wall_thickness + 0.2,
                  d = j_hook_needle_d + tolerance * 2,
                  $fn = 24);
 }

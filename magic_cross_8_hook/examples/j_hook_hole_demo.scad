@@ -22,6 +22,8 @@ wall_thickness = 3;     // [2:0.5:10]
 /* [穴設定] */
 // 3Dプリント公差（垂直面は0.4-0.5mm推奨）
 hole_tolerance = 0.4;   // [0.2:0.05:0.6]
+// 本体埋め込み深さ（フック本体高さ3mm）
+body_depth = 3;         // [1:0.5:5]
 
 /* 実装 */
 
@@ -32,13 +34,13 @@ module sample_wall() {
         translate([-wall_width/2, -wall_height/2, 0])
             cube([wall_width, wall_height, wall_thickness]);
 
-        // Jフック用穴（壁表面から貫通）
+        // Jフック用穴（壁表面から埋め込み + 針穴貫通）
         translate([0, 0, wall_thickness])
-            rotate([180, 0, 0])
-                magic_cross_8_j_hook_hole(
-                    tolerance = hole_tolerance,
-                    depth = wall_thickness
-                );
+            magic_cross_8_j_hook_hole(
+                tolerance = hole_tolerance,
+                body_depth = body_depth,
+                wall_thickness = wall_thickness
+            );
     }
 }
 
@@ -49,7 +51,8 @@ if (show_wall) {
 }
 
 if (show_hook) {
-    // 壁表面にフックを配置（フィットチェック用）
-    translate([0, 0, wall_thickness])
+    // フックを穴に埋め込んだ位置に配置（フィットチェック用）
+    // フック原点は本体底面なので、壁表面から body_depth 下げる
+    translate([0, 0, wall_thickness - body_depth])
         magic_cross_8_j_hook();
 }
