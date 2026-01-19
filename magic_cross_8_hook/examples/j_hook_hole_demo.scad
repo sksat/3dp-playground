@@ -17,7 +17,8 @@ show_hook = true;       // フィットチェック用
 /* [壁設定] */
 wall_width = 30;        // [20:5:50]
 wall_height = 30;       // [20:5:50]
-wall_thickness = 3;     // [2:0.5:10]
+// 壁厚は body_depth + needle_h (= 4mm) 以上が必要
+wall_thickness = 4;     // [4:0.5:10]
 
 /* [穴設定] */
 // 3Dプリント公差（垂直面は0.4-0.5mm推奨）
@@ -51,8 +52,9 @@ if (show_wall) {
 }
 
 if (show_hook) {
-    // フックを穴に埋め込んだ位置に配置（フィットチェック用）
-    // フック原点は本体底面なので、壁表面から body_depth 下げる
+    // フックを凹みの底に配置（フィットチェック用）
+    // フック原点は本体底面、凹みの底に配置
+    // 本体は凹みに収まり、針出口は貫通穴を通って実際の壁へ
     translate([0, 0, wall_thickness - body_depth])
         magic_cross_8_j_hook();
 }

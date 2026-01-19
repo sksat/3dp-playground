@@ -19,11 +19,20 @@ default_tolerance = 0.4;  // 垂直壁への穴を想定
 
 // Jフックモデル（フィットチェック用）
 //
-// 原点: 円柱底面中心（壁に接する面）
-// Z+方向: 円柱 → 円錐（部屋内側）
-// Z-方向: 針出口（壁内部）
+// 原点: 本体底面中心（壁表面に接する面）
+// Z+方向: 本体 → 円錐（部屋内側へ）
+// Z-方向: 針出口（壁穴の中へ）
+//
+// 層構成:
+//   Z=-1〜0: 針出口（壁穴に入る）
+//   Z=0〜3: メイン円柱（壁表面から上）
+//   Z=3〜4.5: 円錐
 module magic_cross_8_j_hook() {
     color("LightGray") {
+        // 底部針出口（壁穴に入る部分、Z-方向）
+        translate([0, 0, -j_hook_needle_h])
+            cylinder(h = j_hook_needle_h, d = j_hook_needle_d, $fn = 24);
+
         // メイン円柱
         cylinder(h = j_hook_body_h, d = j_hook_body_d, $fn = 48);
 
@@ -33,10 +42,6 @@ module magic_cross_8_j_hook() {
                      d1 = j_hook_body_d,
                      d2 = j_hook_cone_top_d,
                      $fn = 48);
-
-        // 底部針出口（下方向に突出）
-        translate([0, 0, -j_hook_needle_h])
-            cylinder(h = j_hook_needle_h, d = j_hook_needle_d, $fn = 24);
     }
 }
 
