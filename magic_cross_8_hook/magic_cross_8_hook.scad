@@ -14,7 +14,8 @@ j_hook_needle_d = 3;         // 針出口直径
 j_hook_needle_h = 1;         // 針出口高さ（突出量）
 
 /* 公差 */
-default_tolerance = 0.3;
+// 3Dプリント公差: 水平面 0.3mm、垂直面 0.4-0.5mm 推奨
+default_tolerance = 0.4;  // 垂直壁への穴を想定
 
 // Jフックモデル（フィットチェック用）
 //
