@@ -47,12 +47,13 @@ module sample_wall() {
         translate([-wall_width/2, -wall_height/2, 0])
             cube([wall_width, wall_height, effective_thickness]);
 
-        // Jフック用穴（壁表面から埋め込み + 針穴貫通）
+        // Jフック固定穴（本体凹み + 針穴貫通）
+        // wall_thickness: 針穴が貫通する深さ（カバー有無に関係なく needle_h + body_depth）
         translate([0, 0, effective_thickness])
             magic_cross_8_j_hook_hole(
                 tolerance = hole_tolerance,
                 body_depth = body_depth,
-                wall_thickness = effective_thickness,
+                wall_thickness = j_hook_needle_h + body_depth,
                 cover_thickness = use_cover ? j_hook_cover_thickness : 0
             );
     }
