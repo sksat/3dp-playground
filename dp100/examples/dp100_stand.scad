@@ -4,7 +4,7 @@
 //
 // 外形: 約 108mm x 70mm x 7mm
 //
-// 依存: BOSL2, dp100.scad
+// 依存: BOSL2, NopSCADlib, dp100.scad
 //
 // ビルド:
 //   openscad -o dp100_stand.stl dp100_stand.scad

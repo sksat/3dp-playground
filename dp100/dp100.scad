@@ -2,7 +2,7 @@
 //
 // フィットチェック用モデルと台座・治具作成のためのモジュール群
 //
-// 依存: BOSL2
+// 依存: BOSL2, NopSCADlib
 //
 // 座標系:
 //   原点: 底面の左前角（出力端子側・手前）
@@ -22,6 +22,7 @@
 //            原点(0,0,0)              → X+ (100.4mm)
 
 include <BOSL2/std.scad>
+include <NopSCADlib/vitamins/pcb.scad>
 
 // ========================================
 // DP100 寸法定数
@@ -46,11 +47,8 @@ dp100_panel_start_z = 6; // 斜め面が始まる高さ（底面から）
 dp100_panel_cutback = dp100_width - dp100_top_depth;  // 前面が後退する量 = 11.2mm
 dp100_panel_angle = atan(dp100_panel_cutback / (dp100_height - dp100_panel_start_z));  // ≈ 45°
 
-// 端子寸法（概算）
-usb_c_width = 9;
-usb_c_height = 3.5;
-usb_a_width = 12;
-usb_a_height = 5;
+// 端子寸法
+// USB コネクタは NopSCADlib のモジュールを使用（usb_C(), usb_Ax1()）
 banana_d = 8;          // バナナジャック直径
 
 // デフォルト公差
@@ -100,6 +98,31 @@ module dp100() {
                     [0, 3, 5, 2]     // 斜め面（切り抜き面、下向き法線）
                 ]
             );
+
+            // USB コネクタ用カットアウト（メスコネクタを埋め込むための空洞）
+            // NopSCADlib の cutout=true は +X 方向に伸びるため、
+            // 180° 回転して -X 方向（本体内部）に向ける
+            // 位置は _dp100_terminals() と同じにすること
+            //
+            // 実測値:
+            //   - コネクタ底面高さ: 5mm
+            //   - Type-A 手前側〜本体手前: 20mm
+            //   - Type-A 奥側〜Type-C 手前側の間隔: 9.5mm
+            usb_bottom_z = 5;
+            usb_a_w = 13.25;  // NopSCADlib usb_Ax1 の幅
+            usb_c_w = 8.94;   // NopSCADlib usb_C の幅
+            usb_a_y = 20 + usb_a_w/2;  // Type-A 中心 Y
+            usb_c_y = 20 + usb_a_w + 9.5 + usb_c_w/2;  // Type-C 中心 Y
+
+            // USB Type-A（手前側）
+            translate([dp100_length + 0.1, usb_a_y, usb_bottom_z])
+                rotate([0, 0, 180])
+                    usb_Ax1(cutout = true);
+
+            // USB Type-C（奥側）
+            translate([dp100_length + 0.1, usb_c_y, usb_bottom_z])
+                rotate([0, 0, 180])
+                    usb_C(cutout = true);
         }
     }
 
@@ -166,7 +189,6 @@ module _dp100_display() {
 // 端子類
 module _dp100_terminals() {
     banana_protrusion = 5.5;  // バナナプラグの突出量
-    usb_protrusion = 2;       // USB端子の突出量
 
     // 出力側（X=0、左短辺）: バナナジャック
     banana_color_plus = "red";
@@ -187,21 +209,31 @@ module _dp100_terminals() {
             rotate([0, 90, 0])
                 cylinder(h = banana_protrusion + 1, d = banana_d, $fn = 24);
 
-    // 入力側（X=100.4、右短辺）: USB Type-C + Type-A
-    usb_color = [0.3, 0.3, 0.3];  // グレー
-    usb_z = dp100_height / 2;
+    // 入力側（X=100.4、右短辺）: USB Type-C + Type-A（メスコネクタ）
+    // NopSCADlib のモジュールを使用
+    // メスコネクタなので本体に埋め込む（本体側でカットアウト済み）
+    //
+    // 実測値:
+    //   - コネクタ底面高さ: 5mm
+    //   - Type-A 手前側〜本体手前: 20mm
+    //   - Type-A 奥側〜Type-C 手前側の間隔: 9.5mm
 
-    // USB Type-C（上側）
-    color(usb_color)
-        translate([dp100_length - 1, dp100_width/2 - 10, usb_z + 3])
-            rotate([0, 90, 0])
-                cube([usb_c_height, usb_c_width, usb_protrusion + 2], center = true);
+    // 共通設定
+    usb_bottom_z = 5;
+    usb_a_w = 13.25;  // NopSCADlib usb_Ax1 の幅
+    usb_c_w = 8.94;   // NopSCADlib usb_C の幅
+    usb_a_y = 20 + usb_a_w/2;  // Type-A 中心 Y
+    usb_c_y = 20 + usb_a_w + 9.5 + usb_c_w/2;  // Type-C 中心 Y
 
-    // USB Type-A（下側）
-    color(usb_color)
-        translate([dp100_length - 1, dp100_width/2 + 8, usb_z - 2])
-            rotate([0, 90, 0])
-                cube([usb_a_height, usb_a_width, usb_protrusion + 2], center = true);
+    // USB Type-A（手前側）
+    usb_a_depth = 17;
+    translate([dp100_length - usb_a_depth/2, usb_a_y, usb_bottom_z])
+        usb_Ax1();
+
+    // USB Type-C（奥側）
+    usb_c_depth = 7.35;
+    translate([dp100_length - usb_c_depth/2, usb_c_y, usb_bottom_z])
+        usb_C();
 }
 
 // ========================================
