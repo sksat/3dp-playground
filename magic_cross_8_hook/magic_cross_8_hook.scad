@@ -1,0 +1,111 @@
+// マジッククロス8シリーズ Jフック ライブラリ
+//
+// フィットチェック用モデルと取り付け穴モジュールを提供
+// 賃貸でも使えるフック「マジッククロス8」シリーズのJフック用
+//
+// 依存: なし
+//
+// 設計上の注意:
+// - このフックは3Dプリント構造を介して実際の壁に取り付ける想定
+// - 3Dプリント構造: 本体を収める凹み + 針が通る貫通穴
+// - 実際の壁: 構造の裏側、針が刺さる壁
+// - 座標系は穴の向き（Z-方向に掘る）に合わせて設計
+// - 構造の最小厚 = body_depth + needle_h
+
+/* 寸法定数 */
+j_hook_body_d = 8;           // メイン円柱直径
+j_hook_body_h = 3;           // メイン円柱高さ
+j_hook_cone_h = 1.5;         // 円錐高さ
+j_hook_cone_top_d = 2;       // 円錐上面直径
+j_hook_needle_d = 3;         // 針出口直径
+j_hook_needle_h = 1;         // 針出口高さ（突出量）
+j_hook_cover_thickness = 1;  // 純正カバーの厚さ（壁方向）
+j_hook_cover_h = 5;          // 純正カバーの高さ（本体底面から）
+
+/* 公差 */
+// 3Dプリント公差: 水平面 0.3mm、垂直面 0.4-0.5mm 推奨
+default_tolerance = 0.4;  // 垂直壁への穴を想定
+
+// Jフックモデル（フィットチェック用）
+//
+// 原点: 本体底面中心（壁表面に接する面）
+// Z+方向: 本体 → 円錐（部屋内側へ）
+// Z-方向: 針出口（壁穴の中へ）
+//
+// 層構成:
+//   Z=-1〜0: 針出口（壁穴に入る）
+//   Z=0〜3: メイン円柱（壁表面から上）
+//   Z=3〜4.5: 円錐
+module magic_cross_8_j_hook() {
+    color("LightGray") {
+        // 底部針出口（壁穴に入る部分、Z-方向）
+        translate([0, 0, -j_hook_needle_h])
+            cylinder(h = j_hook_needle_h, d = j_hook_needle_d, $fn = 24);
+
+        // メイン円柱
+        cylinder(h = j_hook_body_h, d = j_hook_body_d, $fn = 48);
+
+        // 上部円錐
+        translate([0, 0, j_hook_body_h])
+            cylinder(h = j_hook_cone_h,
+                     d1 = j_hook_body_d,
+                     d2 = j_hook_cone_top_d,
+                     $fn = 48);
+    }
+}
+
+// Jフック + カバー モデル（フィットチェック用）
+//
+// カバーは本体と円錐を覆う（高さ5mm、厚さ1mm）
+module magic_cross_8_j_hook_with_cover() {
+    // フック本体
+    magic_cross_8_j_hook();
+
+    // カバー（本体と円錐を覆う円筒）
+    cover_d = j_hook_body_d + j_hook_cover_thickness * 2;
+    color("White")
+        difference() {
+            cylinder(h = j_hook_cover_h, d = cover_d, $fn = 48);
+            // 内側をくり抜き（フック本体が入る）
+            translate([0, 0, -0.1])
+                cylinder(h = j_hook_cover_h + 0.2, d = j_hook_body_d, $fn = 48);
+        }
+}
+
+// Jフック用穴（取り付け穴）
+//
+// 原点: 壁表面（Z=0）、穴はZ-方向に掘られる
+// body_depth: 本体埋め込み深さ（デフォルトは本体高さ）
+// wall_thickness: 壁厚（針穴の貫通用）
+// cover_thickness: カバー厚（0=カバーなし、1=純正カバー）
+//
+// 構造:
+//   壁表面 → 本体用凹み(8mm or 10mm) → 針用穴(3mm) → 壁裏面
+module magic_cross_8_j_hook_hole(
+    tolerance = default_tolerance,
+    body_depth = j_hook_body_h,
+    wall_thickness = 5,
+    cover_thickness = 0
+) {
+    // 凹みの直径（カバー厚を考慮）
+    recess_d = j_hook_body_d + cover_thickness * 2 + tolerance * 2;
+
+    // 本体埋め込み用凹み
+    translate([0, 0, -body_depth - 0.1])
+        cylinder(h = body_depth + 0.2,
+                 d = recess_d,
+                 $fn = 48);
+
+    // 針出口用貫通穴（凹み底から構造底まで）
+    needle_hole_depth = wall_thickness - body_depth;
+    translate([0, 0, -wall_thickness - 0.1])
+        cylinder(h = needle_hole_depth + 0.2,
+                 d = j_hook_needle_d + tolerance * 2,
+                 $fn = 24);
+}
+
+// スタンドアロン実行時のプレビュー
+// show_wall が未定義 = 単体で開いている
+if (is_undef(show_wall)) {
+    magic_cross_8_j_hook();
+}
