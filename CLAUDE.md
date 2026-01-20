@@ -1227,6 +1227,37 @@ polyhedron(
 - 角度で指定: `rotate([angle, 0, 0])` → 座標計算が必要で間違いやすい
 - 寸法で指定: polyhedron の頂点座標に直接値を入れる → 意図が明確
 
+**重要: 斜面の延長は斜面方程式に従う**
+
+切り抜き用 polyhedron を本体より少し大きく作る際、斜面上の点は斜面方程式に従う必要がある:
+
+```openscad
+// 斜面: (Y=0, Z=start_z) から (Y=cutback, Z=height) へ
+// 斜面方程式: Z = start_z + Y * (height - start_z) / cutback
+
+// Y=-1 に延長した時の Z 座標を計算
+cut_margin = 1;
+cut_bottom_z = start_z - cut_margin * (height - start_z) / cutback;
+
+// 正しい頂点座標
+polyhedron(points = [
+    [-cut_margin, -cut_margin, cut_bottom_z],  // 斜面延長上の点
+    // ...
+]);
+```
+
+**よくある間違い:**
+```openscad
+// 間違い: Y=-1 でも Z=start_z のまま
+points = [[-1, -1, start_z], ...]  // 斜面角度が変わってしまう
+
+// 正しい: Y=-1 での Z を斜面方程式から計算
+cut_z = start_z - 1 * rise / run;
+points = [[-1, -1, cut_z], ...]
+```
+
+この間違いは微妙な角度のずれ（例: 45° → 47°）を引き起こし、斜面上に配置するオブジェクトが正しくフィットしなくなる
+
 ### Debugging CSG Operations (CSG 操作のデバッグ)
 
 `difference()` が期待通り動作しない場合:
@@ -1261,32 +1292,44 @@ openscad -o out.png -D '$vpd=280;' model.scad
 
 斜め面（傾斜面）にオブジェクトを配置する際は、以下の手順で行う:
 
-**1. 斜め面の情報を計算**
+**1. 斜め面の情報を計算（三角関数は幾何から直接計算）**
+
 ```openscad
-// 斜め面: (Y1, Z1) から (Y2, Z2) へ
-slope_angle = atan((Z2 - Z1) / (Y2 - Y1));  // 水平からの角度
-slope_length = sqrt((Y2-Y1)^2 + (Z2-Z1)^2); // 斜面の長さ
+// 斜め面: (Y=0, Z=start_z) から (Y=cutback, Z=height) へ
+panel_cutback = cutback;           // Y方向の後退量
+panel_height = height - start_z;   // Z方向の高さ
+slope_length = sqrt(panel_cutback^2 + panel_height^2);
+
+// 三角関数は幾何から直接計算（整合性確保）
+// sin() や cos() を別々に呼ぶと浮動小数点誤差で不整合が起きる可能性
+slope_sin = panel_cutback / slope_length;
+slope_cos = panel_height / slope_length;
+slope_angle = atan2(panel_cutback, panel_height);
 
 // 斜面中心
-center_y = (Y1 + Y2) / 2;
-center_z = (Z1 + Z2) / 2;
+center_y = panel_cutback / 2;
+center_z = (start_z + height) / 2;
 ```
 
 **2. 外向き法線方向を計算**
 ```openscad
 // YZ平面での外向き法線（手前-上方向）
-normal_y = -sin(slope_angle);
-normal_z = cos(slope_angle);
+// 事前計算した sin/cos を使用
+normal_y = -slope_sin;
+normal_z = slope_cos;
 ```
 
 **3. 法線方向にオフセットして配置**
 ```openscad
-// オブジェクトの厚さの半分 + 余裕分だけ法線方向にずらす
-offset = thickness/2 + 0.1;
+// オブジェクトの厚さの半分だけ法線方向にずらす（表面に接触）
+offset = thickness / 2;
 
+// オブジェクトを中心基準で配置してから回転
+// 回転はオブジェクトの中心を軸に行うと予測しやすい
 translate([x, center_y + normal_y * offset, center_z + normal_z * offset])
-    rotate([slope_angle, 0, 0])  // 斜面に合わせて回転
-        cube([width, height, thickness]);  // XY平面の板として作成
+    rotate([slope_angle, 0, 0])
+        translate([0, -obj_height/2, -thickness/2])  // 中心に移動
+            cube([width, obj_height, thickness]);
 ```
 
 **よくある間違い:**
@@ -1296,6 +1339,9 @@ translate([x, center_y + normal_y * offset, center_z + normal_z * offset])
 | オブジェクトが面に埋まる | 法線方向オフセットなし | `normal * offset` を追加 |
 | オブジェクトが面に垂直に刺さる | 回転角度の符号間違い | 角度の符号を確認 |
 | オブジェクトの向きが逆 | XZ平面で板を作った | XY平面で作成して回転 |
+| 上部OK、下部が埋まる/浮く | 切り抜き斜面の角度がずれている | polyhedron 頂点を斜面方程式に従わせる |
+| 微妙に角度がずれる | sin/cos の浮動小数点誤差 | 幾何から直接 sin/cos を計算 |
+| 回転後の位置が予測困難 | オブジェクトの角で回転している | 中心に translate してから回転 |
 
 **板の向きと回転:**
 - `cube([w, h, t])` は XY平面に広がる板（薄い方向が Z）
