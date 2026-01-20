@@ -198,22 +198,22 @@ module _dp100_display() {
 
 // 端子類
 module _dp100_terminals() {
-    banana_protrusion = 5.5;  // バナナプラグの突出量
-
     // 出力側（X=0、左短辺）: バナナジャック
+    // シンプルな円柱で表現
+    banana_protrusion = 5.5;  // バナナプラグの突出量
     banana_color_plus = "red";
     banana_color_minus = "black";
     banana_spacing = 20;
     banana_z = dp100_height / 2;
     banana_y = dp100_width / 2;
 
-    // バナナジャック +
+    // バナナジャック +（手前側）
     color(banana_color_plus)
         translate([-banana_protrusion, banana_y - banana_spacing/2, banana_z])
             rotate([0, 90, 0])
                 cylinder(h = banana_protrusion + 1, d = banana_d, $fn = 24);
 
-    // バナナジャック -
+    // バナナジャック -（奥側）
     color(banana_color_minus)
         translate([-banana_protrusion, banana_y + banana_spacing/2, banana_z])
             rotate([0, 90, 0])
