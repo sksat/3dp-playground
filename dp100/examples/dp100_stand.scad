@@ -25,7 +25,7 @@ tolerance = 0.3; // [0.1:0.05:0.5] 本体とのクリアランス
 wall = 2;        // [1:0.5:4] 側壁の厚さ
 base = 2;        // [1:0.5:4] 底板の厚さ
 lip_height = 5;  // [3:1:10] 縁の高さ
-end_opening = true;  // 端子側を開放
+corner_r = 3;    // [1:0.5:5] 角丸半径
 
 // ========================================
 // 組み立て
@@ -38,7 +38,7 @@ color("white")
         wall = wall,
         base = base,
         lip_height = lip_height,
-        end_opening = end_opening
+        corner_r = corner_r
     );
 
 // フィットチェック用DP100

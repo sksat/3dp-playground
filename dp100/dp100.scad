@@ -273,33 +273,58 @@ module dp100_stand(
     wall = 2,
     base = 2,
     lip_height = 5,
-    end_opening = true  // 端子側を開放するか
+    corner_r = dp100_corner_r  // DP100と同じ角丸半径
 ) {
     inner_length = dp100_length + tolerance * 2;
     inner_width = dp100_width + tolerance * 2;
+    inner_r = corner_r + tolerance;  // 内側の角丸（DP100が入る）
 
     outer_length = inner_length + wall * 2;
     outer_width = inner_width + wall * 2;
+    outer_r = inner_r + wall;  // 外側の角丸
     total_height = base + lip_height;
 
+    // 端子開口の寸法と位置
+    // バナナジャック: Y = dp100_width/2 ± 10mm (spacing=20mm)
+    banana_center_y = dp100_width / 2;  // 31.1mm
+    banana_spacing = 20;
+    banana_margin = 5;  // ジャック周りの余裕
+    banana_opening_w = banana_spacing + banana_d + banana_margin * 2;  // 20+8+10=38mm
+    banana_opening_h = banana_d + banana_margin * 2;  // 8+10=18mm
+    banana_opening_y = wall + tolerance + banana_center_y - banana_opening_w/2;
+
+    // USB: Type-A (Y=20〜33.25) + Type-C (Y=42.75〜51.69)
+    usb_start_y = 14;   // Type-A 手前側に余裕を持たせる
+    usb_end_y = 54;     // Type-C 奥側より少し奥
+    usb_opening_w = usb_end_y - usb_start_y;  // 36mm
+    usb_opening_h = 14;  // USB コネクタ高さ + 余裕
+    usb_opening_y = wall + tolerance + usb_start_y;
+
     difference() {
-        // 外形
-        cube([outer_length, outer_width, total_height]);
+        // 外形（フィレット付き）
+        cuboid(
+            [outer_length, outer_width, total_height],
+            rounding = outer_r,
+            edges = "Z",
+            anchor = BOTTOM + LEFT + FRONT
+        );
 
-        // 内側くり抜き（DP100収納部）
+        // 内側くり抜き（DP100収納部、フィレット付き）
         translate([wall, wall, base])
-            cube([inner_length, inner_width, lip_height + 1]);
+            cuboid(
+                [inner_length, inner_width, lip_height + 1],
+                rounding = inner_r,
+                edges = "Z",
+                anchor = BOTTOM + LEFT + FRONT
+            );
 
-        // 端子側の開口
-        if (end_opening) {
-            // 出力側（X=0）開口
-            translate([-1, wall, base])
-                cube([wall + 2, inner_width, lip_height + 1]);
+        // 出力側（X=0）開口：バナナジャック用
+        translate([-1, banana_opening_y, base])
+            cube([wall + 2, banana_opening_w, banana_opening_h]);
 
-            // 入力側（X=outer_length）開口
-            translate([outer_length - wall - 1, wall, base])
-                cube([wall + 2, inner_width, lip_height + 1]);
-        }
+        // 入力側（X=outer_length）開口：USB用
+        translate([outer_length - wall - 1, usb_opening_y, base])
+            cube([wall + 2, usb_opening_w, usb_opening_h]);
     }
 }
 
