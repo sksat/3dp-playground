@@ -36,9 +36,9 @@ use_cover = false;
 //   Z=needle_h + body_depth: 本体凹み上端 = 構造表面（カバーなし時）
 //   Z=needle_h + cover_h: 構造表面（カバーあり時、カバー上端と一致）
 
-// カバー用の追加厚さ = カバー高さ - 本体深さ
-cover_extra = j_hook_cover_h - body_depth;  // 5 - 3 = 2mm
-effective_thickness = j_hook_needle_h + body_depth + (use_cover ? cover_extra : 0);
+// 凹み深さ（カバー使用時はカバー高さ、それ以外は本体深さ）
+recess_depth = use_cover ? j_hook_cover_h : body_depth;
+effective_thickness = j_hook_needle_h + recess_depth;
 
 // サンプル壁（穴付き）
 module sample_wall() {
@@ -51,7 +51,7 @@ module sample_wall() {
         translate([0, 0, effective_thickness])
             magic_cross_8_j_hook_hole(
                 tolerance = hole_tolerance,
-                body_depth = body_depth,
+                body_depth = recess_depth,
                 wall_thickness = effective_thickness,
                 cover_thickness = use_cover ? j_hook_cover_thickness : 0
             );

@@ -96,9 +96,10 @@ module magic_cross_8_j_hook_hole(
                  d = recess_d,
                  $fn = 48);
 
-    // 針出口用貫通穴
+    // 針出口用貫通穴（凹み底から構造底まで）
+    needle_hole_depth = wall_thickness - body_depth;
     translate([0, 0, -wall_thickness - 0.1])
-        cylinder(h = wall_thickness + 0.2,
+        cylinder(h = needle_hole_depth + 0.2,
                  d = j_hook_needle_d + tolerance * 2,
                  $fn = 24);
 }

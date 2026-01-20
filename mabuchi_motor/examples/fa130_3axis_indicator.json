@@ -1,0 +1,21 @@
+{
+    "fileFormatVersion": "1",
+    "parameterSets": {
+        "New set 1": {
+            "_fa130_mount_demo_included": "true",
+            "bracket_wall": "4",
+            "disc_d": "25",
+            "disc_h": "3",
+            "m3_nut_pocket_depth": "3",
+            "m3_nut_width": "5.5",
+            "shaft_tolerance": "0.20000000000000001",
+            "show_bracket": "true",
+            "show_indicators": "false",
+            "show_motors": "false",
+            "show_mounts": "false",
+            "spiral_depth": "0.59999999999999998",
+            "spiral_turns": "2",
+            "spiral_w": "1.5"
+        }
+    }
+}
