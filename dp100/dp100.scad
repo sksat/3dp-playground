@@ -44,8 +44,13 @@ dp100_corner_r = 3;    // 四隅の角丸半径
 dp100_top_depth = 51;    // 天面の短辺（Y方向）
 dp100_panel_start_z = 6; // 斜め面が始まる高さ（底面から）
 // 計算値
-dp100_panel_cutback = dp100_width - dp100_top_depth;  // 前面が後退する量 = 11.2mm
-dp100_panel_angle = atan(dp100_panel_cutback / (dp100_height - dp100_panel_start_z));  // ≈ 45°
+dp100_panel_cutback = dp100_width - dp100_top_depth;  // 前面が後退する量（Y方向）= 11.2mm
+dp100_panel_height = dp100_height - dp100_panel_start_z;  // 斜め面の垂直方向高さ（Z方向）= 11.2mm
+dp100_panel_slope_length = sqrt(dp100_panel_cutback * dp100_panel_cutback + dp100_panel_height * dp100_panel_height);  // 斜め辺の長さ ≈ 15.84mm
+// 三角関数の値を斜め辺から直接計算（整合性確保）
+dp100_panel_sin = dp100_panel_cutback / dp100_panel_slope_length;  // sin(角度)
+dp100_panel_cos = dp100_panel_height / dp100_panel_slope_length;   // cos(角度)
+dp100_panel_angle = atan2(dp100_panel_cutback, dp100_panel_height);  // 角度（度）≈ 45°
 
 // 端子寸法
 // USB コネクタは NopSCADlib のモジュールを使用（usb_C(), usb_Ax1()）
@@ -79,16 +84,20 @@ module dp100() {
             // polyhedron で頂点座標を直接指定して三角柱を作成。
             // 面の頂点順序は外側から見て反時計回り（CCW）にすること。
             // 順序が間違っていると difference() が正しく動作しない。
+            // 斜面を正しい角度で延長するため、底面のZ座標を調整
+            // Y=-1 での斜面延長位置: Z = panel_start_z + (-1) * (panel_height / panel_cutback)
+            cut_margin = 1;  // 本体からの延長マージン
+            cut_bottom_z = dp100_panel_start_z - cut_margin * dp100_panel_height / dp100_panel_cutback;
             polyhedron(
                 points = [
                     // 左端の三角形 (X = -1)
-                    [-1, -1, dp100_panel_start_z],                          // 0: 前面下
-                    [-1, -1, dp100_height + 1],                             // 1: 前面上
-                    [-1, dp100_panel_cutback + 1, dp100_height + 1],        // 2: 後方上
-                    // 右端の三角形 (X = dp100_length + 1)
-                    [dp100_length + 1, -1, dp100_panel_start_z],            // 3: 前面下
-                    [dp100_length + 1, -1, dp100_height + 1],               // 4: 前面上
-                    [dp100_length + 1, dp100_panel_cutback + 1, dp100_height + 1]  // 5: 後方上
+                    [-cut_margin, -cut_margin, cut_bottom_z],               // 0: 前面下（斜面延長上）
+                    [-cut_margin, -cut_margin, dp100_height + cut_margin],  // 1: 前面上
+                    [-cut_margin, dp100_panel_cutback + cut_margin, dp100_height + cut_margin],  // 2: 後方上
+                    // 右端の三角形 (X = dp100_length + cut_margin)
+                    [dp100_length + cut_margin, -cut_margin, cut_bottom_z], // 3: 前面下（斜面延長上）
+                    [dp100_length + cut_margin, -cut_margin, dp100_height + cut_margin],  // 4: 前面上
+                    [dp100_length + cut_margin, dp100_panel_cutback + cut_margin, dp100_height + cut_margin]  // 5: 後方上
                 ],
                 faces = [
                     [0, 2, 1],       // 左三角形（-X から見て CCW）
@@ -157,11 +166,9 @@ module _dp100_display() {
     display_thickness = 0.5;
     display_margin_left = 5;  // 左端からディスプレイまでの距離
 
-    // 斜め面の情報
-    // 斜め面は (Y=0, Z=dp100_panel_start_z) から (Y=dp100_panel_cutback, Z=dp100_height) へ
-    slope_length = sqrt(dp100_panel_cutback * dp100_panel_cutback +
-                        (dp100_height - dp100_panel_start_z) * (dp100_height - dp100_panel_start_z));
-    display_height_on_slope = slope_length * 0.6;  // 斜面の60%をディスプレイに
+    // ディスプレイ高さ: 斜め辺の長さから上下0.2mmずつ小さい
+    display_margin = 0.2;
+    display_height_on_slope = dp100_panel_slope_length - display_margin * 2;
 
     // ディスプレイ中心位置（斜面の中央）
     slope_center_y = dp100_panel_cutback / 2;
@@ -171,18 +178,21 @@ module _dp100_display() {
     display_x = display_margin_left;
 
     // ディスプレイを斜め面に沿わせる
-    // 斜め面の外向き法線方向: (-sin(angle), cos(angle)) in YZ
+    // 斜め面の外向き法線方向: (-sin, cos) in YZ
     // 表面に乗せるため、法線方向にオフセット
-    normal_y = -sin(dp100_panel_angle);
-    normal_z = cos(dp100_panel_angle);
-    surface_offset = display_thickness / 2 + 0.1;  // 表面より少し外側に
+    // 事前計算された sin/cos を使用して整合性を確保
+    normal_y = -dp100_panel_sin;
+    normal_z = dp100_panel_cos;
+    surface_offset = display_thickness / 2;  // 表面に接触
 
+    // ディスプレイを中央に配置してから回転
+    // 回転はディスプレイの中心を軸に行う
     color(display_color)
         translate([display_x,
                    slope_center_y + normal_y * surface_offset,
                    slope_center_z + normal_z * surface_offset])
             rotate([dp100_panel_angle, 0, 0])
-                translate([0, -display_height_on_slope/2, 0])
+                translate([0, -display_height_on_slope/2, -display_thickness/2])
                     cube([display_width, display_height_on_slope, display_thickness]);
 }
 
