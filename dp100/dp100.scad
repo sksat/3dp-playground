@@ -326,6 +326,7 @@ module dp100_stand(
     wall = 2,
     base = 2,
     lip_height = 5,
+    back_wall_height = undef,  // 奥側壁の高さ（undefならDP100高さに合わせる）
     corner_r = dp100_corner_r  // DP100と同じ角丸半径
 ) {
     inner_length = dp100_length + tolerance * 2;
@@ -336,6 +337,9 @@ module dp100_stand(
     outer_width = inner_width + wall * 2;
     outer_r = inner_r + wall;  // 外側の角丸
     total_height = base + lip_height;
+
+    // 奥側の壁の高さ（デフォルト: DP100の高さに合わせる）
+    _back_wall_height = is_undef(back_wall_height) ? base + dp100_height : back_wall_height;
 
     // 端子開口の寸法と位置
     // バナナジャック: Y = dp100_width/2 ± 10mm (spacing=20mm)
@@ -355,9 +359,9 @@ module dp100_stand(
     usb_opening_y = wall + tolerance + usb_start_y;
 
     difference() {
-        // 外形（フィレット付き）
+        // 外形（フィレット付き、奥壁の高さで作成）
         cuboid(
-            [outer_length, outer_width, total_height],
+            [outer_length, outer_width, _back_wall_height],
             rounding = outer_r,
             edges = "Z",
             anchor = BOTTOM + LEFT + FRONT
@@ -366,11 +370,21 @@ module dp100_stand(
         // 内側くり抜き（DP100収納部、フィレット付き）
         translate([wall, wall, base])
             cuboid(
-                [inner_length, inner_width, lip_height + 1],
+                [inner_length, inner_width, _back_wall_height],
                 rounding = inner_r,
                 edges = "Z",
                 anchor = BOTTOM + LEFT + FRONT
             );
+
+        // 手前側の壁を低くする（lip_heightまで削る）
+        // 奥側（USB開口より奥）の壁は高いまま残す
+        back_section_y = usb_opening_y + usb_opening_w;  // USB開口の奥端
+        // 手前側の壁を削る（USB開口の奥端まで）
+        translate([-0.1, -0.1, total_height])
+            cube([outer_length + 0.2, back_section_y + 0.1, _back_wall_height]);
+        // 左右の壁の中央部分を削る（奥側の壁は残す）
+        translate([wall, back_section_y, total_height])
+            cube([outer_length - wall * 2, outer_width - back_section_y - wall, _back_wall_height]);
 
         // 出力側（X=0）開口：バナナジャック用
         translate([-1, banana_opening_y, base])
