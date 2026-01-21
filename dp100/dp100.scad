@@ -280,7 +280,7 @@ module _dp100_rubber_feet() {
     // 外周からの距離なので、中心 = margin + radius
     x_left = rubber_foot_margin_side + r;
     x_right = dp100_length - rubber_foot_margin_side - r;
-    y_front = rubber_foot_margin_front - r;  // 手前: 外周が13mmの位置
+    y_front = rubber_foot_margin_front + r;  // 手前: 手前側外周が13mmの位置
     y_back = dp100_width - rubber_foot_margin_back - r;
 
     color(foot_color) {
@@ -406,7 +406,7 @@ module dp100_stand(
         // ゴム足中心座標（DP100ローカル座標）
         foot_x_left = rubber_foot_margin_side + foot_r;
         foot_x_right = dp100_length - rubber_foot_margin_side - foot_r;
-        foot_y_front = rubber_foot_margin_front - foot_r;
+        foot_y_front = rubber_foot_margin_front + foot_r;
         foot_y_back = dp100_width - rubber_foot_margin_back - foot_r;
 
         // スタンド座標に変換
