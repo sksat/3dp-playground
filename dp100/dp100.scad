@@ -19,7 +19,7 @@
 //  (バナナ)   ───│                     │─── (Type-C/A)
 //            │  │                     │
 //            │  └─────────────────────┘
-//            原点(0,0,0)              → X+ (100.4mm)
+//            原点(0,0,0)              → X+ (94mm)
 
 include <BOSL2/std.scad>
 include <NopSCADlib/vitamins/pcb.scad>
@@ -29,7 +29,7 @@ include <NopSCADlib/vitamins/pcb.scad>
 // ========================================
 
 // 外形寸法
-dp100_length = 100.4;  // 長辺（X方向）
+dp100_length = 94;  // 長辺（X方向）※バナナプラグ込みで約100.4mm
 dp100_width = 62.2;    // 短辺（Y方向）
 dp100_height = 17.2;   // 高さ（Z方向）
 
@@ -109,8 +109,8 @@ module dp100() {
             );
 
             // USB コネクタ用カットアウト（メスコネクタを埋め込むための空洞）
-            // NopSCADlib の cutout=true は +X 方向に伸びるため、
-            // 180° 回転して -X 方向（本体内部）に向ける
+            // NopSCADlib の cutout=true は非常に長いカットアウトを生成するため、
+            // intersection() で本体右半分のみに制限する
             // 位置は _dp100_terminals() と同じにすること
             //
             // 実測値:
@@ -122,16 +122,25 @@ module dp100() {
             usb_c_w = 8.94;   // NopSCADlib usb_C の幅
             usb_a_y = 20 + usb_a_w/2;  // Type-A 中心 Y
             usb_c_y = 20 + usb_a_w + 9.5 + usb_c_w/2;  // Type-C 中心 Y
+            usb_cutout_depth = 30;  // カットアウトの最大深さ
 
-            // USB Type-A（手前側）
-            translate([dp100_length + 0.1, usb_a_y, usb_bottom_z])
-                rotate([0, 0, 180])
-                    usb_Ax1(cutout = true);
+            // USB Type-A（手前側）- カットアウト深さを制限
+            intersection() {
+                translate([dp100_length - usb_cutout_depth, 0, 0])
+                    cube([usb_cutout_depth + 1, dp100_width, dp100_height]);
+                translate([dp100_length + 0.1, usb_a_y, usb_bottom_z])
+                    rotate([0, 0, 180])
+                        usb_Ax1(cutout = true);
+            }
 
-            // USB Type-C（奥側）
-            translate([dp100_length + 0.1, usb_c_y, usb_bottom_z])
-                rotate([0, 0, 180])
-                    usb_C(cutout = true);
+            // USB Type-C（奥側）- カットアウト深さを制限
+            intersection() {
+                translate([dp100_length - usb_cutout_depth, 0, 0])
+                    cube([usb_cutout_depth + 1, dp100_width, dp100_height]);
+                translate([dp100_length + 0.1, usb_c_y, usb_bottom_z])
+                    rotate([0, 0, 180])
+                        usb_C(cutout = true);
+            }
         }
     }
 
@@ -219,7 +228,7 @@ module _dp100_terminals() {
             rotate([0, 90, 0])
                 cylinder(h = banana_protrusion + 1, d = banana_d, $fn = 24);
 
-    // 入力側（X=100.4、右短辺）: USB Type-C + Type-A（メスコネクタ）
+    // 入力側（X=94、右短辺）: USB Type-C + Type-A（メスコネクタ）
     // NopSCADlib のモジュールを使用
     // メスコネクタなので本体に埋め込む（本体側でカットアウト済み）
     //
@@ -294,9 +303,10 @@ module dp100_stand(
     banana_opening_y = wall + tolerance + banana_center_y - banana_opening_w/2;
 
     // USB: Type-A (Y=20〜33.25) + Type-C (Y=42.75〜51.69)
+    // コネクタ持ち手部分の余裕を考慮（約2.5mm）
     usb_start_y = 14;   // Type-A 手前側に余裕を持たせる
-    usb_end_y = 54;     // Type-C 奥側より少し奥
-    usb_opening_w = usb_end_y - usb_start_y;  // 36mm
+    usb_end_y = 57;     // Type-C 奥側 + 持ち手余裕（51.69 + 5.3mm）
+    usb_opening_w = usb_end_y - usb_start_y;  // 43mm
     usb_opening_h = 14;  // USB コネクタ高さ + 余裕
     usb_opening_y = wall + tolerance + usb_start_y;
 
