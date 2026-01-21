@@ -358,49 +358,63 @@ module dp100_stand(
     usb_opening_h = 14;  // USB コネクタ高さ + 余裕
     usb_opening_y = wall + tolerance + usb_start_y;
 
-    difference() {
-        // 外形（フィレット付き、奥壁の高さで作成）
-        cuboid(
-            [outer_length, outer_width, _back_wall_height],
-            rounding = outer_r,
-            edges = "Z",
-            anchor = BOTTOM + LEFT + FRONT
-        );
+    // 各開口の奥端（壁延長の境界）
+    banana_back_y = banana_opening_y + banana_opening_w;  // バナナ開口の奥端
+    usb_back_y = usb_opening_y + usb_opening_w;  // USB開口の奥端
+    wall_ext_h = _back_wall_height - total_height;  // 壁延長の高さ
 
-        // 内側くり抜き（DP100収納部、フィレット付き）
-        translate([wall, wall, base])
+    difference() {
+        union() {
+            // 基本形状（total_height、フィレット付き）
             cuboid(
-                [inner_length, inner_width, _back_wall_height],
-                rounding = inner_r,
+                [outer_length, outer_width, total_height],
+                rounding = outer_r,
                 edges = "Z",
                 anchor = BOTTOM + LEFT + FRONT
             );
 
-        // 手前側の壁を低くする（lip_heightまで削る）
-        // 各開口より奥側の壁は高いまま残す
-        banana_back_y = banana_opening_y + banana_opening_w;  // バナナ開口の奥端
-        usb_back_y = usb_opening_y + usb_opening_w;  // USB開口の奥端
+            // 壁延長部分（奥側、フィレット付き）
+            // 外形から内側をくり抜いて壁のみ残す
+            if (wall_ext_h > 0) {
+                translate([0, 0, total_height])
+                    difference() {
+                        // 外形（フィレット付き）
+                        cuboid(
+                            [outer_length, outer_width, wall_ext_h],
+                            rounding = outer_r,
+                            edges = "Z",
+                            anchor = BOTTOM + LEFT + FRONT
+                        );
 
-        // 左側壁（X < wall）: バナナ開口の奥端まで削る
-        // オーバーラップ 0.1 で境界面の Z-fighting を回避
-        translate([-0.1, -0.1, total_height])
-            cube([wall + 0.2, banana_back_y + 0.1, _back_wall_height]);
+                        // 内側くり抜き（フィレット付き）
+                        translate([wall, wall, -0.1])
+                            cuboid(
+                                [inner_length, inner_width, wall_ext_h + 0.2],
+                                rounding = inner_r,
+                                edges = "Z",
+                                anchor = BOTTOM + LEFT + FRONT
+                            );
 
-        // 中央部（wall < X < outer_length - wall）: USB開口の奥端まで削る
-        translate([wall - 0.1, -0.1, total_height])
-            cube([outer_length - wall * 2 + 0.2, usb_back_y + 0.1, _back_wall_height]);
+                        // 手前セクションを削除（バナナ開口まで、全幅）
+                        translate([-0.1, -0.1, -0.1])
+                            cube([outer_length + 0.2, banana_back_y + 0.1, wall_ext_h + 0.2]);
 
-        // 右側壁（X > outer_length - wall）: USB開口の奥端まで削る
-        translate([outer_length - wall - 0.1, -0.1, total_height])
-            cube([wall + 0.2, usb_back_y + 0.1, _back_wall_height]);
+                        // 中央セクションを削除（バナナ開口からUSB開口まで）
+                        // 左壁（X < wall）は残す
+                        translate([wall - 0.1, banana_back_y - 0.1, -0.1])
+                            cube([outer_length - wall + 0.2, usb_back_y - banana_back_y + 0.2, wall_ext_h + 0.2]);
+                    }
+            }
+        }
 
-        // 内側の奥部分を削る（左右で開口位置が異なる）
-        // 左半分（バナナ開口奥から奥壁まで）- 右にオーバーラップ
-        translate([wall - 0.1, banana_back_y - 0.1, total_height])
-            cube([inner_length / 2 + 0.2, outer_width - banana_back_y - wall + 0.2, _back_wall_height]);
-        // 右半分（USB開口奥から奥壁まで）- 左にオーバーラップ
-        translate([wall + inner_length / 2 - 0.1, usb_back_y - 0.1, total_height])
-            cube([inner_length / 2 + 0.2, outer_width - usb_back_y - wall + 0.2, _back_wall_height]);
+        // 内側くり抜き（DP100収納部、フィレット付き）
+        translate([wall, wall, base])
+            cuboid(
+                [inner_length, inner_width, total_height],
+                rounding = inner_r,
+                edges = "Z",
+                anchor = BOTTOM + LEFT + FRONT
+            );
 
         // 出力側（X=0）開口：バナナジャック用
         translate([-1, banana_opening_y, base])
