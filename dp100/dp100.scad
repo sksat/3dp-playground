@@ -358,71 +358,42 @@ module dp100_stand(
     usb_opening_h = 14;  // USB コネクタ高さ + 余裕
     usb_opening_y = wall + tolerance + usb_start_y;
 
-    // 各開口の奥端（壁延長の境界）
+    // 各開口の奥端（壁の高さの境界）
     banana_back_y = banana_opening_y + banana_opening_w;  // バナナ開口の奥端
     usb_back_y = usb_opening_y + usb_opening_w;  // USB開口の奥端
-    wall_ext_h = _back_wall_height - total_height;  // 壁延長の高さ
 
     difference() {
-        union() {
-            // 基本形状（total_height、フィレット付き）
-            cuboid(
-                [outer_length, outer_width, total_height],
-                rounding = outer_r,
-                edges = "Z",
-                anchor = BOTTOM + LEFT + FRONT
-            );
+        // 1. 全体を _back_wall_height で作成（外側フィレット付き）
+        cuboid(
+            [outer_length, outer_width, _back_wall_height],
+            rounding = outer_r,
+            edges = "Z",
+            anchor = BOTTOM + LEFT + FRONT
+        );
 
-            // 壁延長部分（奥側、フィレット付き）
-            // 外形から内側をくり抜いて壁のみ残す
-            if (wall_ext_h > 0) {
-                translate([0, 0, total_height])
-                    difference() {
-                        // 外形（フィレット付き）
-                        cuboid(
-                            [outer_length, outer_width, wall_ext_h],
-                            rounding = outer_r,
-                            edges = "Z",
-                            anchor = BOTTOM + LEFT + FRONT
-                        );
-
-                        // 内側くり抜き（フィレット付き）
-                        translate([wall, wall, -0.1])
-                            cuboid(
-                                [inner_length, inner_width, wall_ext_h + 0.2],
-                                rounding = inner_r,
-                                edges = "Z",
-                                anchor = BOTTOM + LEFT + FRONT
-                            );
-
-                        // 手前セクションを削除（バナナ開口まで、全幅）
-                        translate([-0.1, -0.1, -0.1])
-                            cube([outer_length + 0.2, banana_back_y + 0.1, wall_ext_h + 0.2]);
-
-                        // 中央セクションを削除（バナナ開口からUSB開口まで）
-                        // 左壁（X < wall）は残す
-                        translate([wall - 0.1, banana_back_y - 0.1, -0.1])
-                            cube([outer_length - wall + 0.2, usb_back_y - banana_back_y + 0.2, wall_ext_h + 0.2]);
-                    }
-            }
-        }
-
-        // 内側くり抜き（DP100収納部、フィレット付き）
+        // 2. 内側くり抜き（DP100収納部、内側フィレット付き、上まで貫通）
         translate([wall, wall, base])
             cuboid(
-                [inner_length, inner_width, total_height],
+                [inner_length, inner_width, _back_wall_height],
                 rounding = inner_r,
                 edges = "Z",
                 anchor = BOTTOM + LEFT + FRONT
             );
 
-        // 出力側（X=0）開口：バナナジャック用
+        // 3. バナナジャック開口（ベースから上まで貫通）
         translate([-1, banana_opening_y, base])
-            cube([wall + 2, banana_opening_w, banana_opening_h]);
+            cube([wall + 2, banana_opening_w, _back_wall_height]);
 
-        // 入力側（X=outer_length）開口：USB用
+        // 4. USB開口（ベースから上まで貫通）
         translate([outer_length - wall - 1, usb_opening_y, base])
-            cube([wall + 2, usb_opening_w, usb_opening_h]);
+            cube([wall + 2, usb_opening_w, _back_wall_height]);
+
+        // 5. 手前側壁を削る（lip_height の高さに）
+        // バナナ開口の奥端まで全幅で削る
+        translate([-0.1, -0.1, total_height])
+            cube([outer_length + 0.2, banana_back_y + 0.1, _back_wall_height - total_height + 0.1]);
+
+        // 6. 奥側壁は削らない（banana_back_y から奥は _back_wall_height のまま）
 
         // ゴム足用凹み（底面に4箇所）
         // クリアランス: 直径+1mm
