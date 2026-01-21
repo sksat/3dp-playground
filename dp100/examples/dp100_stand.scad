@@ -21,11 +21,12 @@ include <../dp100.scad>
 show_dp100 = true;  // フィットチェック用にDP100を表示
 
 /* [台座設定] */
-tolerance = 0.3; // [0.1:0.05:0.5] 本体とのクリアランス
-wall = 2;        // [1:0.5:4] 側壁の厚さ
-base = 2;        // [1:0.5:4] 底板の厚さ
-lip_height = 5;  // [3:1:10] 縁の高さ
-end_opening = true;  // 端子側を開放
+tolerance = 0.3;     // [0.1:0.05:0.5] 本体とのクリアランス
+wall = 2;            // [1:0.5:4] 側壁の厚さ
+base = 2;            // [1:0.5:4] 底板の厚さ
+lip_height = 5;      // [3:1:10] 縁の高さ
+back_wall_height = 0; // [0:1:25] 奥側壁の高さ（0=DP100高さに合わせる）
+corner_r = 3;        // [1:0.5:5] 角丸半径
 
 // ========================================
 // 組み立て
@@ -38,7 +39,8 @@ color("white")
         wall = wall,
         base = base,
         lip_height = lip_height,
-        end_opening = end_opening
+        back_wall_height = back_wall_height == 0 ? undef : back_wall_height,
+        corner_r = corner_r
     );
 
 // フィットチェック用DP100
