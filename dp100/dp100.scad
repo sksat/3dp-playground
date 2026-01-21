@@ -379,6 +379,37 @@ module dp100_stand(
         // 入力側（X=outer_length）開口：USB用
         translate([outer_length - wall - 1, usb_opening_y, base])
             cube([wall + 2, usb_opening_w, usb_opening_h]);
+
+        // ゴム足用凹み（底面に4箇所）
+        // クリアランス: 直径+1mm
+        // 深さ: ゴム足高さ + 0.3mm（ただし底面に最低0.4mm残す）
+        foot_recess_d = rubber_foot_d + 1;
+        min_floor = 0.4;  // 底面の最小厚さ（印刷用に2層分）
+        foot_recess_depth = min(rubber_foot_h + 0.3, base - min_floor);
+        foot_r = rubber_foot_d / 2;
+
+        // ゴム足中心座標（DP100ローカル座標）
+        foot_x_left = rubber_foot_margin_side + foot_r;
+        foot_x_right = dp100_length - rubber_foot_margin_side - foot_r;
+        foot_y_front = rubber_foot_margin_front - foot_r;
+        foot_y_back = dp100_width - rubber_foot_margin_back - foot_r;
+
+        // スタンド座標に変換
+        foot_offset_x = wall + tolerance;
+        foot_offset_y = wall + tolerance;
+
+        // 手前左
+        translate([foot_offset_x + foot_x_left, foot_offset_y + foot_y_front, base - foot_recess_depth])
+            cylinder(h = foot_recess_depth + 0.1, d = foot_recess_d, $fn = 24);
+        // 手前右
+        translate([foot_offset_x + foot_x_right, foot_offset_y + foot_y_front, base - foot_recess_depth])
+            cylinder(h = foot_recess_depth + 0.1, d = foot_recess_d, $fn = 24);
+        // 奥左
+        translate([foot_offset_x + foot_x_left, foot_offset_y + foot_y_back, base - foot_recess_depth])
+            cylinder(h = foot_recess_depth + 0.1, d = foot_recess_d, $fn = 24);
+        // 奥右
+        translate([foot_offset_x + foot_x_right, foot_offset_y + foot_y_back, base - foot_recess_depth])
+            cylinder(h = foot_recess_depth + 0.1, d = foot_recess_d, $fn = 24);
     }
 }
 
