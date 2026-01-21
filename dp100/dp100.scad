@@ -377,14 +377,30 @@ module dp100_stand(
             );
 
         // 手前側の壁を低くする（lip_heightまで削る）
-        // 奥側（USB開口より奥）の壁は高いまま残す
-        back_section_y = usb_opening_y + usb_opening_w;  // USB開口の奥端
-        // 手前側の壁を削る（USB開口の奥端まで）
+        // 各開口より奥側の壁は高いまま残す
+        banana_back_y = banana_opening_y + banana_opening_w;  // バナナ開口の奥端
+        usb_back_y = usb_opening_y + usb_opening_w;  // USB開口の奥端
+
+        // 左側壁（X < wall）: バナナ開口の奥端まで削る
+        // オーバーラップ 0.1 で境界面の Z-fighting を回避
         translate([-0.1, -0.1, total_height])
-            cube([outer_length + 0.2, back_section_y + 0.1, _back_wall_height]);
-        // 左右の壁の中央部分を削る（奥側の壁は残す）
-        translate([wall, back_section_y, total_height])
-            cube([outer_length - wall * 2, outer_width - back_section_y - wall, _back_wall_height]);
+            cube([wall + 0.2, banana_back_y + 0.1, _back_wall_height]);
+
+        // 中央部（wall < X < outer_length - wall）: USB開口の奥端まで削る
+        translate([wall - 0.1, -0.1, total_height])
+            cube([outer_length - wall * 2 + 0.2, usb_back_y + 0.1, _back_wall_height]);
+
+        // 右側壁（X > outer_length - wall）: USB開口の奥端まで削る
+        translate([outer_length - wall - 0.1, -0.1, total_height])
+            cube([wall + 0.2, usb_back_y + 0.1, _back_wall_height]);
+
+        // 内側の奥部分を削る（左右で開口位置が異なる）
+        // 左半分（バナナ開口奥から奥壁まで）- 右にオーバーラップ
+        translate([wall - 0.1, banana_back_y - 0.1, total_height])
+            cube([inner_length / 2 + 0.2, outer_width - banana_back_y - wall + 0.2, _back_wall_height]);
+        // 右半分（USB開口奥から奥壁まで）- 左にオーバーラップ
+        translate([wall + inner_length / 2 - 0.1, usb_back_y - 0.1, total_height])
+            cube([inner_length / 2 + 0.2, outer_width - usb_back_y - wall + 0.2, _back_wall_height]);
 
         // 出力側（X=0）開口：バナナジャック用
         translate([-1, banana_opening_y, base])
