@@ -56,6 +56,17 @@ dp100_panel_angle = atan2(dp100_panel_cutback, dp100_panel_height);  // 角度�
 // USB コネクタは NopSCADlib のモジュールを使用（usb_C(), usb_Ax1()）
 banana_d = 8;          // バナナジャック直径
 
+// ゴム足寸法（取り外し可能）
+rubber_foot_d = 9;     // ゴム足直径
+rubber_foot_h = 1.5;   // ゴム足高さ
+// 配置: 下部四隅
+// - 奥側面から外周まで: 2.5mm
+// - 手前側面から外周まで: 13mm
+// - 横側面から外周まで: 2.5mm
+rubber_foot_margin_back = 2.5;   // 奥側面からの距離
+rubber_foot_margin_front = 13;   // 手前側面からの距離
+rubber_foot_margin_side = 2.5;   // 横側面からの距離
+
 // デフォルト公差
 default_tolerance = 0.3;
 
@@ -63,7 +74,7 @@ default_tolerance = 0.3;
 // dp100() - フィットチェック用モデル
 // ========================================
 
-module dp100() {
+module dp100(show_feet = true) {
     // 本体色
     body_color = [0.2, 0.2, 0.2];  // ダークグレー
 
@@ -149,6 +160,11 @@ module dp100() {
 
     // 端子（両側面）
     _dp100_terminals();
+
+    // ゴム足（オプション）
+    if (show_feet) {
+        _dp100_rubber_feet();
+    }
 }
 
 // ========================================
@@ -253,6 +269,34 @@ module _dp100_terminals() {
     usb_c_depth = 7.35;
     translate([dp100_length - usb_c_depth/2, usb_c_y, usb_bottom_z])
         usb_C();
+}
+
+// ゴム足（下部四隅）
+module _dp100_rubber_feet() {
+    foot_color = [0.3, 0.3, 0.3];  // ダークグレー（本体より少し明るい）
+    r = rubber_foot_d / 2;
+
+    // 中心座標の計算
+    // 外周からの距離なので、中心 = margin + radius
+    x_left = rubber_foot_margin_side + r;
+    x_right = dp100_length - rubber_foot_margin_side - r;
+    y_front = rubber_foot_margin_front - r;  // 手前: 外周が13mmの位置
+    y_back = dp100_width - rubber_foot_margin_back - r;
+
+    color(foot_color) {
+        // 手前左
+        translate([x_left, y_front, -rubber_foot_h])
+            cylinder(h = rubber_foot_h, d = rubber_foot_d, $fn = 24);
+        // 手前右
+        translate([x_right, y_front, -rubber_foot_h])
+            cylinder(h = rubber_foot_h, d = rubber_foot_d, $fn = 24);
+        // 奥左
+        translate([x_left, y_back, -rubber_foot_h])
+            cylinder(h = rubber_foot_h, d = rubber_foot_d, $fn = 24);
+        // 奥右
+        translate([x_right, y_back, -rubber_foot_h])
+            cylinder(h = rubber_foot_h, d = rubber_foot_d, $fn = 24);
+    }
 }
 
 // ========================================
