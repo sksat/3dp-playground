@@ -31,7 +31,7 @@ include <NopSCADlib/vitamins/pcb.scad>
 // 外形寸法
 dp100_length = 94;  // 長辺（X方向）※バナナプラグ込みで約100.4mm
 dp100_width = 62.2;    // 短辺（Y方向）
-dp100_height = 17.2;   // 高さ（Z方向）
+dp100_height = 16.2;   // 高さ（Z方向）
 
 // フィレット
 dp100_corner_r = 3;    // 四隅の角丸半径
